@@ -13,8 +13,16 @@
    pip install -r requirements.txt
    ```
 4. Запустите сервер командой:
+
+   **For Windows:**
+
    ```sh
    python.exe -m uvicorn src.main:app --reload
+   ```
+   **For Linux:**
+
+   ```sh
+   python3 -m uvicorn src.main:app --reload
    ```
 
 ## Структура проекта
