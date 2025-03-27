@@ -1,4 +1,5 @@
 from .base import BaseModel
+from .wp_base import WPBaseModel
 from .users import User
 from .clients import Client
 from .users_clients import UserClient
@@ -7,3 +8,7 @@ from .answers import Answer
 from .questionnaires import Questionnaire
 from .questions import Question
 from .settings import Setting
+from .wp_forms import WPForm
+from .wp_fields import WPField
+from .wp_items import WPItem
+from .wp_item_metas import WPFrmItemMeta
