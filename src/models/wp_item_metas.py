@@ -4,7 +4,7 @@ from .wp_base import WPBaseModel
 from .custom_types import timestamp
 
 
-class WPFrmItemMeta(WPBaseModel):
+class WPItemMeta(WPBaseModel):
     __tablename__ = "wp_frm_item_metas"
     __table_args__ = (
         Index("field_id", "field_id"),

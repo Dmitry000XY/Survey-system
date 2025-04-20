@@ -11,4 +11,4 @@ from .settings import Setting
 from .wp_forms import WPForm
 from .wp_fields import WPField
 from .wp_items import WPItem
-from .wp_item_metas import WPFrmItemMeta
+from .wp_item_metas import WPItemMeta

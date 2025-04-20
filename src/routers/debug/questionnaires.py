@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Response, status
 from src.dependencies.dependencies import get_questionnaire_service
-from src.schemas.questionnaires import QuestionnaireCreate, QuestionnaireOut, QuestionnaireDetail
+from src.schemas.questionnaires import QuestionnaireCreate, QuestionnaireUpdate, QuestionnaireOut, QuestionnaireDetail
 from src.services.questionnaires import QuestionnaireService
 
 questionnaires_router = APIRouter(tags=["Questionnaires"], prefix="/questionnaires")
@@ -36,7 +36,7 @@ async def get_questionnaire_detail(questionnaire_id: int, questionnaire_version:
 
 @questionnaires_router.put("/{questionnaire_id}/{questionnaire_version}", response_model=QuestionnaireOut)
 async def update_questionnaire(questionnaire_id: int, questionnaire_version: int,
-                               new_data: Annotated[QuestionnaireCreate, Depends()], service: questionnaire_service):
+                               new_data: Annotated[QuestionnaireUpdate, Depends()], service: questionnaire_service):
     updated = await service.update_questionnaire(questionnaire_id, questionnaire_version, new_data)
     if updated:
         return updated
@@ -47,3 +47,16 @@ async def update_questionnaire(questionnaire_id: int, questionnaire_version: int
 async def delete_questionnaire(questionnaire_id: int, questionnaire_version: int, service: questionnaire_service):
     await service.delete_questionnaire(questionnaire_id, questionnaire_version)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@questionnaires_router.post(
+    "/deactivate",
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Questionnaires successfully deactivated."},
+        404: {"description": "Some questionnaires not found."}
+    }
+)
+async def deactivate_questionnaires(ids: Annotated[list[int], Depends()], service: questionnaire_service):
+    await service.deactivate_questionnaires(ids)
+    return Response(status_code=status.HTTP_200_OK)

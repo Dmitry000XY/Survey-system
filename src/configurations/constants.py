@@ -12,6 +12,28 @@ MIN_CLIENT_NAME_LENGTH = 1
 MAX_CLIENT_NAME_LENGTH = 64
 
 # Фиксированная длина для хэшей (например, api_key, questionnaire_hash)
-FIXED_HASH_LENGTH = 64
+FIXED_HASH_LENGTH = 128
 
-generate_api_key = lambda: secrets.token_urlsafe(48)  # Генерирует 64-символьный api-key
+generate_api_key = lambda: secrets.token_urlsafe(96)  # Генерирует 128-символьный api-key
+
+ALLOWED_QUESTION_TYPES = [
+    "divider",
+    "name",
+    "select",
+    "email",
+    "end_divider",
+    "text",
+    "password",
+    "date",
+    "phone",
+    "radio",
+    "checkbox",
+    "toggle",
+    "html",
+    "user_id",
+    "number",
+    "captcha",
+    "textarea"
+]
+
+SYNC_INTERVAL_SECONDS = 300

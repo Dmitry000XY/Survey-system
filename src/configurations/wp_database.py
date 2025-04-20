@@ -8,9 +8,9 @@ import src.models  # noqa F401
 
 from .wp_settings import wp_settings
 
-logger = logging.getLogger("__name__")
+logger = logging.getLogger(__name__)
 
-__all__ = ["wp_global_init", "wp_get_async_session"]
+__all__ = ["wp_global_init", "get_wp_async_session"]
 
 __async_engine: Optional[AsyncEngine] = None
 __session_factory: Optional[Callable[[], AsyncSession]] = None
@@ -31,7 +31,7 @@ def wp_global_init() -> None:
     __session_factory = async_sessionmaker(__async_engine)
 
 
-async def wp_get_async_session() -> AsyncGenerator:
+async def get_wp_async_session() -> AsyncGenerator:
     global __session_factory
 
     if not __session_factory:

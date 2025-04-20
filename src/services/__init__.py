@@ -6,3 +6,4 @@ from .answers import AnswerService
 from .questionnaires import QuestionnaireService
 from .questions import QuestionService
 from .settings import SettingService
+from .synchronization_service import SynchronizationService

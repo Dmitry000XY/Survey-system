@@ -1,25 +1,31 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Dict
 
-__all__ = ["QuestionBase", "QuestionCreate", "QuestionOut"]
+from src.models.questions import AnswerTypeEnum
+from src.schemas.dependencies import Dependencies
+
+__all__ = ["QuestionBase", "QuestionCreate", "QuestionUpdate", "QuestionOut"]
 
 
 class QuestionBase(BaseModel):
-    questionnaire_id: int
-    questionnaire_version: int
     question: str
     question_order: int
-    answers: Dict  # JSON-структура с вариантами ответов
-    dependencies: Dict  # JSON-структура с зависимостями
+    answers: list[str] | None
+    answer_type: AnswerTypeEnum
+    dependencies: Dependencies
     wordpress_id: int | None = None
 
 
 class QuestionCreate(QuestionBase):
+    questionnaire_id: int
+    questionnaire_version: int
+
+
+class QuestionUpdate(QuestionBase):
     pass
 
 
-class QuestionOut(QuestionBase):
+class QuestionOut(QuestionCreate):
     question_id: int
     time_created: datetime
 
