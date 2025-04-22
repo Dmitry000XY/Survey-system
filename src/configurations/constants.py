@@ -16,7 +16,8 @@ FIXED_HASH_LENGTH = 128
 
 generate_api_key = lambda: secrets.token_urlsafe(96)  # Генерирует 128-символьный api-key
 
-ALLOWED_QUESTION_TYPES = [
+# Список всех типов вопросов, которые бывают в WPForms
+ALL_QUESTION_TYPES = [
     "divider",
     "name",
     "select",
@@ -33,6 +34,27 @@ ALLOWED_QUESTION_TYPES = [
     "user_id",
     "number",
     "captcha",
+    "textarea",
+]
+
+# Из них – только эти мы показываем в боте
+ALLOWED_QUESTION_TYPES = [
+    # "divider",
+    "name",
+    "select",
+    "email",
+    # "end_divider",
+    "text",
+    "password",
+    "date",
+    "phone",
+    "radio",
+    "checkbox",
+    "toggle",
+    # "html",
+    "user_id",
+    "number",
+    # "captcha",
     "textarea"
 ]
 

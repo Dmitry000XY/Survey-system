@@ -31,7 +31,7 @@ class Question(BaseModel):
     questionnaire_version: Mapped[int_notnull]
     question: Mapped[str] = mapped_column(Text, nullable=False)
     question_order: Mapped[int_notnull]
-    answers: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=True, default=list)
+    answers: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
     answer_type: Mapped[AnswerTypeEnum] = mapped_column(PGEnum(AnswerTypeEnum, name="answer_type_enum"), nullable=False)
     dependencies: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     wordpress_id: Mapped[int] = mapped_column(Integer, nullable=True)

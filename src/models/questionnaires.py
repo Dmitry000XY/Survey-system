@@ -28,5 +28,5 @@ class Questionnaire(BaseModel):
         "QuestionnaireAnswer", back_populates="questionnaire", cascade="all, delete-orphan"
     )
     questions: Mapped[List["Question"]] = relationship(
-        "Question", back_populates="questionnaire", cascade="all, delete-orphan"
+        "Question", back_populates="questionnaire", cascade="all, delete-orphan", order_by="Question.question_order"
     )

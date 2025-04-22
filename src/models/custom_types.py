@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import Integer, String, TIMESTAMP, func
 from sqlalchemy.orm import mapped_column
 
-from src.configurations.constants import ALLOWED_QUESTION_TYPES
+from src.configurations.constants import ALL_QUESTION_TYPES
 
 # Целочисленные типы
 serialpk = Annotated[int, mapped_column(Integer, primary_key=True, autoincrement=True)]
@@ -46,6 +46,6 @@ timestamp_onupdate_nullable = Annotated[Optional[datetime], mapped_column(
 # Генерируем перечисление из константы
 AnswerTypeEnum = Enum(
     "AnswerTypeEnum",
-    {item.upper(): item.upper() for item in ALLOWED_QUESTION_TYPES},
+    {item.upper(): item.upper() for item in ALL_QUESTION_TYPES},
     type=str  # Чтобы члены были подтипом str (Python 3.11+)
 )
