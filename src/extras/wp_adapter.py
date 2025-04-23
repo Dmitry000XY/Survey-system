@@ -1,6 +1,7 @@
 import logging
+from src.configurations.constants import ALL_TAGS
 from src.extras.PhpSerializer import decode_php_serialized
-from src.models.custom_types import AnswerTypeEnum
+from src.models.custom_types import AnswerTypeEnum, QuestionnaireTagEnum
 from src.models.wp_forms import WPForm
 from src.models.wp_fields import WPField
 from src.models.questionnaires import Questionnaire
@@ -28,6 +29,7 @@ class WPToQuestionnaireAdapter:
             "questionnaire_name": wp_form.name,
             "wordpress_id": wp_form.id,
             "is_active": True,
+            "tags": self._extract_tags(wp_form),
             "questionnaire_hash": new_hash,
         }
 
@@ -59,6 +61,12 @@ class WPToQuestionnaireAdapter:
                   ) -> list[QuestionnaireCreateWithQuestions | QuestionnaireCreateWithQuestionsNew]:
         return [self.adapt(wp_form, existing_questionnaire, new_hash)
                 for wp_form, existing_questionnaire, new_hash in data]
+
+    @staticmethod
+    def _extract_tags(form: WPForm) -> list[QuestionnaireTagEnum]:
+        """Парсим form.form_key на наличие тегов, возвращаем список QuestionnaireTagEnum."""
+        form_key = (form.form_key or "").lower()
+        return [QuestionnaireTagEnum(tag) for search_tag, tag in ALL_TAGS if search_tag in form_key]
 
     @staticmethod
     def _decode_answers(field: WPField) -> list[str] | None:

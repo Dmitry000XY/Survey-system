@@ -18,6 +18,7 @@ class QuestionnaireRepository:
             questionnaire_name=questionnaire.questionnaire_name,
             wordpress_id=questionnaire.wordpress_id,
             is_active=questionnaire.is_active,
+            tags=questionnaire.tags,
             questionnaire_hash=questionnaire.questionnaire_hash
         )
         self.session.add(new_questionnaire)
@@ -49,6 +50,7 @@ class QuestionnaireRepository:
                 "questionnaire_name": questionnaire.questionnaire_name,
                 "wordpress_id": questionnaire.wordpress_id,
                 "is_active": questionnaire.is_active,
+                "tags": questionnaire.tags,
                 "questionnaire_hash": questionnaire.questionnaire_hash,
                 "questions": questions,
             }
@@ -72,6 +74,7 @@ class QuestionnaireRepository:
                 questionnaire_name=questionnaire.questionnaire_name,
                 wordpress_id=questionnaire.wordpress_id,
                 is_active=questionnaire.is_active,
+                tags=questionnaire.tags,
                 questionnaire_hash=questionnaire.questionnaire_hash
             )
             new_questionnaires.append(new_questionnaire)
@@ -101,6 +104,7 @@ class QuestionnaireRepository:
                 questionnaire_name=new_data.questionnaire_name,
                 wordpress_id=new_data.wordpress_id,
                 is_active=new_data.is_active,
+                tags=new_data.tags,
                 questionnaire_hash=new_data.questionnaire_hash
             )
             .returning(Questionnaire)

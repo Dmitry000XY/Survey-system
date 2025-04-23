@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import Integer, String, TIMESTAMP, func
 from sqlalchemy.orm import mapped_column
 
-from src.configurations.constants import ALL_QUESTION_TYPES
+from src.configurations.constants import ALL_QUESTION_TYPES, ALL_QUESTIONNAIRE_TAGS
 
 # Целочисленные типы
 serialpk = Annotated[int, mapped_column(Integer, primary_key=True, autoincrement=True)]
@@ -48,4 +48,10 @@ AnswerTypeEnum = Enum(
     "AnswerTypeEnum",
     {item.upper(): item.upper() for item in ALL_QUESTION_TYPES},
     type=str  # Чтобы члены были подтипом str (Python 3.11+)
+)
+
+QuestionnaireTagEnum = Enum(
+    "QuestionnaireTagEnum",
+    {t.upper(): t for t in ALL_QUESTIONNAIRE_TAGS},
+    type=str
 )

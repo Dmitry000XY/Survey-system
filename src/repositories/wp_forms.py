@@ -1,7 +1,6 @@
-from sqlalchemy import select, func, cast, String, and_, text
+from sqlalchemy import select, func, cast, String, text, and_, or_
 from sqlalchemy.orm import selectinload, with_loader_criteria
-
-from src.configurations.constants import ALLOWED_QUESTION_TYPES
+from src.configurations.constants import ALLOWED_QUESTION_TYPES, ALL_SEARCH_TAGS
 from src.models.wp_forms import WPForm
 from src.models.wp_fields import WPField
 
@@ -88,8 +87,15 @@ class WPFormRepository:
             WPField.type.in_(ALLOWED_QUESTION_TYPES)
         )
 
+        # Оставляем только те анкеты, у которых есть хотя бы один тег
+        tag_filters = [
+            WPForm.form_key.ilike(f"%{tag}%")
+            for tag in ALL_SEARCH_TAGS
+        ]
+
         query = (
             select(WPForm, questionnaire_hash)
+            .where(or_(*tag_filters))
             .outerjoin(WPField, join_cond)
             .options(
                 selectinload(WPForm.fields),

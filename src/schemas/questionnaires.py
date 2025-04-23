@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import List
+from src.models.custom_types import QuestionnaireTagEnum
 from src.schemas.questions import QuestionOut, QuestionBase
 from src.configurations.constants import FIXED_HASH_LENGTH
 
@@ -11,6 +11,7 @@ __all__ = ["QuestionnaireBase", "QuestionnaireCreate", "QuestionnaireCreateWithQ
 class QuestionnaireBase(BaseModel):
     questionnaire_name: str = Field(..., max_length=64)
     wordpress_id: int | None = None
+    tags: list[QuestionnaireTagEnum] = Field(..., description="List of questionnaire tags")
     is_active: bool = True
     questionnaire_hash: str = Field(..., min_length=FIXED_HASH_LENGTH, max_length=FIXED_HASH_LENGTH)
 
@@ -47,7 +48,7 @@ class QuestionnaireOut(QuestionnaireBase):
 
 # Схема с вложенными вопросами (зависимость)
 class QuestionnaireDetail(QuestionnaireOut):
-    questions: List[QuestionOut] = []
+    questions: list[QuestionOut] = []
 
     class Config:
         from_attributes = True
