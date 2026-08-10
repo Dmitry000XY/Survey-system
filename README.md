@@ -1,4 +1,4 @@
-# Survey System
+# Survey System (Beta)
 
 ## Описание
 
@@ -10,8 +10,8 @@ Formidable Forms.
 ## Быстрый старт
 
 1. Клонируйте репозиторий и перейдите в его директорию.
-2. Установите [uv](https://docs.astral.sh/uv/getting-started/installation/), если он ещё не доступен в системе.
-3. Создайте `.env` на основе `.env.example` и укажите параметры подключения к PostgreSQL и WordPress/MySQL.
+2. Создайте `.env` на основе `.env.example` и укажите параметры подключения к PostgreSQL и WordPress/MySQL.
+3. Установите [uv](https://docs.astral.sh/uv/getting-started/installation/), если он ещё не доступен в системе.
 4. Создайте окружение и установите зафиксированные зависимости:
 
    ```sh
@@ -23,5 +23,3 @@ Formidable Forms.
    ```sh
    uv run uvicorn src.main:app --reload
    ```
-
-Версия Python берётся из `.python-version`. `uv` использует её при создании проектного окружения.
