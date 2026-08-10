@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 
-from src.configurations import create_db_and_tables, delete_db_and_tables, global_init, wp_global_init
+from src.configurations import create_db_and_tables, global_init, wp_global_init
 from src.extras.synchronization_runner import start_synchronization
 from src.routers import debug_router, openapi_tags
 

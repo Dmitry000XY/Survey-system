@@ -5,7 +5,7 @@ logger = logging.getLogger(__name__)
 
 class PhpSerializer:
     @classmethod
-    def loads(cls, s: str, custom_char_lengths: dict = None):
+    def loads(cls, s: str, custom_char_lengths: dict[str, int] | None = None):
         """
         Декодирует строку, закодированную в формате PHP-сериализации, в питоновские структуры.
 
@@ -30,7 +30,7 @@ class PhpSerializer:
         return value
 
     @classmethod
-    def dumps(cls, obj, custom_char_lengths: dict = None) -> str:
+    def dumps(cls, obj, custom_char_lengths: dict[str, int] | None = None) -> str:
         """
         Кодирует питоновские структуры (bool, int, str, list, dict) в строку формата PHP-сериализации.
 
@@ -73,7 +73,7 @@ class PhpSerializer:
             raise ValueError(f"Неподдерживаемый тип для сериализации: {type(obj)}")
 
     @staticmethod
-    def _custom_char_length(ch: str, custom_char_lengths: dict) -> int:
+    def _custom_char_length(ch: str, custom_char_lengths: dict[str, int]) -> int:
         """
         Возвращает «длину» символа ch в байтах.
 
@@ -98,7 +98,7 @@ class PhpSerializer:
         return idx
 
     @classmethod
-    def _parse(cls, s: str, idx: int, custom_char_lengths: dict):
+    def _parse(cls, s: str, idx: int, custom_char_lengths: dict[str, int]):
         """
         Рекурсивно разбирает строку s, начиная с позиции idx, с учетом custom_char_lengths.
 
@@ -125,7 +125,7 @@ class PhpSerializer:
             raise ValueError(f"Неизвестный тип данных '{type_char}' на позиции {idx}. Ожидались 's', 'i', 'a' или 'b'.")
 
     @classmethod
-    def _parse_string(cls, s: str, idx: int, custom_char_lengths: dict):
+    def _parse_string(cls, s: str, idx: int, custom_char_lengths: dict[str, int]):
         """
         Разбирает строку в формате:
           s:<длина>:"<значение>";
@@ -273,7 +273,7 @@ class PhpSerializer:
         return value, idx
 
     @classmethod
-    def _parse_array(cls, s: str, idx: int, custom_char_lengths: dict):
+    def _parse_array(cls, s: str, idx: int, custom_char_lengths: dict[str, int]):
         """
         Разбирает массив в формате:
           a:<количество элементов>:{ <ключ><значение> ... }

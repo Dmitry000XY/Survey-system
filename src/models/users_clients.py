@@ -1,8 +1,14 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import BaseModel
 from .custom_types import intpk, int_notnull
+
+if TYPE_CHECKING:
+    from .clients import Client
+    from .users import User
 
 
 class UserClient(BaseModel):

@@ -1,7 +1,13 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, String, Text, Boolean, Index, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .wp_base import WPBaseModel
 from .custom_types import timestamp, timestamp_onupdate
+
+if TYPE_CHECKING:
+    from .wp_forms import WPForm
+    from .wp_item_metas import WPItemMeta
 
 
 class WPItem(WPBaseModel):
