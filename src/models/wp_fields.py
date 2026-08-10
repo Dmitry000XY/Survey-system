@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, String, Text, Integer, Index, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .wp_base import WPBaseModel
 from .custom_types import timestamp
+
+if TYPE_CHECKING:
+    from .wp_forms import WPForm
 
 
 class WPField(WPBaseModel):

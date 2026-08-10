@@ -1,4 +1,3 @@
-from sqlalchemy import select
 from src.models.users_clients import UserClient
 
 

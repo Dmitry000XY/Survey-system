@@ -1,9 +1,15 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import CheckConstraint, Boolean, Integer, ARRAY, Enum as PGEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import BaseModel
 from .custom_types import serialpk, intpk, int_notnull, str64_idx, str128_idx, timestamp, QuestionnaireTagEnum
 from src.configurations.constants import FIXED_HASH_LENGTH
+
+if TYPE_CHECKING:
+    from .questionnaire_answers import QuestionnaireAnswer
+    from .questions import Question
 
 
 class Questionnaire(BaseModel):

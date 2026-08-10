@@ -1,9 +1,15 @@
-from typing import List
+from typing import TYPE_CHECKING, List
 from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import BaseModel
 from .custom_types import serialpk, int_notnull, timestamp, timestamp_nullable
+
+if TYPE_CHECKING:
+    from .answers import Answer
+    from .clients import Client
+    from .questionnaires import Questionnaire
+    from .users import User
 
 
 class QuestionnaireAnswer(BaseModel):

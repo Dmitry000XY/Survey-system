@@ -1,9 +1,13 @@
-from typing import List
+from typing import TYPE_CHECKING, List
 from sqlalchemy import CheckConstraint
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
 from .base import BaseModel
 from .custom_types import serialpk, str64_idx, str32_idx, timestamp
+
+if TYPE_CHECKING:
+    from .questionnaire_answers import QuestionnaireAnswer
+    from .users_clients import UserClient
 
 
 class Client(BaseModel):

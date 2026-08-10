@@ -14,7 +14,8 @@ MAX_CLIENT_NAME_LENGTH = 64
 # Фиксированная длина для хэшей (например, api_key, questionnaire_hash)
 FIXED_HASH_LENGTH = 128
 
-generate_api_key = lambda: secrets.token_urlsafe(96)  # Генерирует 128-символьный api-key
+def generate_api_key() -> str:
+    return secrets.token_urlsafe(96)  # Генерирует 128-символьный api-key
 
 # Теги для поиска в WP БД
 SEARCH_TAG_VISIBLE = "bot"

@@ -1,8 +1,14 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import JSON, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import BaseModel
 from .custom_types import intpk, timestamp
+
+if TYPE_CHECKING:
+    from .questionnaire_answers import QuestionnaireAnswer
+    from .questions import Question
 
 
 class Answer(BaseModel):
