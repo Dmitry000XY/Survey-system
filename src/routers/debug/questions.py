@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Response, status
-from src.dependencies.dependencies import get_question_service
+from src.dependencies import get_question_service
 from src.schemas.questions import QuestionCreate, QuestionOut
 from src.services.questions import QuestionService
 

@@ -1,5 +1,6 @@
 from enum import Enum
-from pydantic import BaseModel
+
+from pydantic import BaseModel, Field
 
 
 class ShowHideEnum(str, Enum):
@@ -32,6 +33,6 @@ class Condition(BaseModel):
 
 
 class Dependencies(BaseModel):
-    show_hide: ShowHideEnum
-    all_any: AllAnyEnum
-    conditions: list[Condition]
+    show_hide: ShowHideEnum = ShowHideEnum.SHOW
+    all_any: AllAnyEnum = AllAnyEnum.ALL
+    conditions: list[Condition] = Field(default_factory=list)

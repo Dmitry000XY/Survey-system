@@ -1,10 +1,9 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
 
-from src.configurations import create_db_and_tables, global_init, wp_global_init
-from src.extras.synchronization_runner import start_synchronization
+from src.configurations import close_database, close_wp_database, global_init, wp_global_init
+from src.extras.synchronization_runner import start_synchronization, stop_synchronization
 from src.routers import debug_router, openapi_tags
 
 
@@ -12,10 +11,13 @@ from src.routers import debug_router, openapi_tags
 async def lifespan(app: FastAPI):
     global_init()
     wp_global_init()
-    await create_db_and_tables()
-    start_synchronization()
-    yield
-    # await delete_db_and_tables()  # TODO
+    synchronization_task = start_synchronization()
+    try:
+        yield
+    finally:
+        await stop_synchronization(synchronization_task)
+        await close_wp_database()
+        await close_database()
 
 
 def create_application():
@@ -24,9 +26,8 @@ def create_application():
         description="The Influenza Research Institute Survey System is a dedicated platform designed to streamline the collection of user-reported data.",
         version="0.0.1",
         # responses={404: {"description": "Not Found!"}}, # TODO
-        default_response_class=ORJSONResponse,
         lifespan=lifespan,
-        openapi_tags=openapi_tags
+        openapi_tags=openapi_tags,
     )
 
 

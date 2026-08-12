@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 __all__ = ["UserClientBase", "UserClientCreate", "UserClientOut"]
 
@@ -14,5 +14,4 @@ class UserClientCreate(UserClientBase):
 
 
 class UserClientOut(UserClientBase):
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

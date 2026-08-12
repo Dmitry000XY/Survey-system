@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Response, status
-from src.dependencies.dependencies import get_user_client_service
+from src.dependencies import get_user_client_service
 from src.schemas.users_clients import UserClientCreate, UserClientOut
 from src.services.users_clients import UserClientService
 

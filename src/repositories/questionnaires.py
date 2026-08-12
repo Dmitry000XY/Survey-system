@@ -3,8 +3,12 @@ from sqlalchemy.orm import selectinload
 
 from src.models import Question
 from src.models.questionnaires import Questionnaire
-from src.schemas.questionnaires import QuestionnaireCreate, QuestionnaireUpdate, QuestionnaireCreateWithQuestions, \
-    QuestionnaireCreateWithQuestionsNew
+from src.schemas.questionnaires import (
+    QuestionnaireCreate,
+    QuestionnaireUpdate,
+    QuestionnaireCreateWithQuestions,
+    QuestionnaireCreateWithQuestionsNew,
+)
 
 
 class QuestionnaireRepository:
@@ -19,15 +23,15 @@ class QuestionnaireRepository:
             wordpress_id=questionnaire.wordpress_id,
             is_active=questionnaire.is_active,
             tags=questionnaire.tags,
-            questionnaire_hash=questionnaire.questionnaire_hash
+            questionnaire_hash=questionnaire.questionnaire_hash,
         )
         self.session.add(new_questionnaire)
         await self.session.flush()
         return new_questionnaire
 
-    async def create_all_questionnaires_with_questions(self, questionnaires: list[
-        QuestionnaireCreateWithQuestions | QuestionnaireCreateWithQuestionsNew]) -> \
-            list[Questionnaire]:
+    async def create_all_questionnaires_with_questions(
+        self, questionnaires: list[QuestionnaireCreateWithQuestions | QuestionnaireCreateWithQuestionsNew]
+    ) -> list[Questionnaire]:
         new_questionnaires = []
         for questionnaire in questionnaires:
             # Предполагается, что q.questions - список объектов типа QuestionCreate
@@ -37,7 +41,7 @@ class QuestionnaireRepository:
                 new_question = Question(
                     question=question_data.question,
                     question_order=question_data.question_order,
-                    answers=question_data.answers,
+                    answer_options=[option.model_dump(mode="json") for option in question_data.answer_options],
                     answer_type=question_data.answer_type,
                     dependencies=question_data.dependencies.model_dump(),
                     wordpress_id=question_data.wordpress_id,
@@ -75,7 +79,7 @@ class QuestionnaireRepository:
                 wordpress_id=questionnaire.wordpress_id,
                 is_active=questionnaire.is_active,
                 tags=questionnaire.tags,
-                questionnaire_hash=questionnaire.questionnaire_hash
+                questionnaire_hash=questionnaire.questionnaire_hash,
             )
             new_questionnaires.append(new_questionnaire)
         self.session.add_all(new_questionnaires)
@@ -90,14 +94,15 @@ class QuestionnaireRepository:
     async def get_questionnaire(self, questionnaire_id: int, questionnaire_version: int) -> Questionnaire | None:
         return await self.session.get(Questionnaire, (questionnaire_id, questionnaire_version))
 
-    async def update_questionnaire(self, questionnaire_id: int, questionnaire_version: int,
-                                   new_data: QuestionnaireUpdate) -> Questionnaire | None:
+    async def update_questionnaire(
+        self, questionnaire_id: int, questionnaire_version: int, new_data: QuestionnaireUpdate
+    ) -> Questionnaire | None:
         query = (
             update(Questionnaire)
             .where(
                 and_(
                     Questionnaire.questionnaire_id == questionnaire_id,
-                    Questionnaire.questionnaire_version == questionnaire_version
+                    Questionnaire.questionnaire_version == questionnaire_version,
                 )
             )
             .values(
@@ -105,7 +110,7 @@ class QuestionnaireRepository:
                 wordpress_id=new_data.wordpress_id,
                 is_active=new_data.is_active,
                 tags=new_data.tags,
-                questionnaire_hash=new_data.questionnaire_hash
+                questionnaire_hash=new_data.questionnaire_hash,
             )
             .returning(Questionnaire)
         )
@@ -124,7 +129,7 @@ class QuestionnaireRepository:
             .where(
                 and_(
                     Questionnaire.questionnaire_id == questionnaire_id,
-                    Questionnaire.questionnaire_version == questionnaire_version
+                    Questionnaire.questionnaire_version == questionnaire_version,
                 )
             )
         )
@@ -136,20 +141,17 @@ class QuestionnaireRepository:
         Returns a list of Questionnaires, each corresponding to the latest version for a given questionnaire_id.
         """
         subq = (
-            select(
-                Questionnaire.questionnaire_id,
-                func.max(Questionnaire.questionnaire_version).label("max_version")
-            )
+            select(Questionnaire.questionnaire_id, func.max(Questionnaire.questionnaire_version).label("max_version"))
             .group_by(Questionnaire.questionnaire_id)
             .subquery()
         )
 
-        query = (
-            select(Questionnaire)
-            .join(subq, and_(
+        query = select(Questionnaire).join(
+            subq,
+            and_(
                 Questionnaire.questionnaire_id == subq.c.questionnaire_id,
-                Questionnaire.questionnaire_version == subq.c.max_version
-            ))
+                Questionnaire.questionnaire_version == subq.c.max_version,
+            ),
         )
         result = await self.session.execute(query)
         return result.scalars().all()
@@ -159,8 +161,23 @@ class QuestionnaireRepository:
         Set is_active = False for all questionnaires with questionnaire_id in the provided list.
         """
         query = (
-            update(Questionnaire)
-            .where(Questionnaire.questionnaire_id.in_(questionnaire_ids))
-            .values(is_active=False)
+            update(Questionnaire).where(Questionnaire.questionnaire_id.in_(questionnaire_ids)).values(is_active=False)
         )
         await self.session.execute(query)
+
+    async def activate_version(self, questionnaire_id: int, questionnaire_version: int) -> None:
+        """Make exactly one existing version active for a questionnaire."""
+
+        await self.session.execute(
+            update(Questionnaire).where(Questionnaire.questionnaire_id == questionnaire_id).values(is_active=False)
+        )
+        await self.session.execute(
+            update(Questionnaire)
+            .where(
+                and_(
+                    Questionnaire.questionnaire_id == questionnaire_id,
+                    Questionnaire.questionnaire_version == questionnaire_version,
+                )
+            )
+            .values(is_active=True)
+        )

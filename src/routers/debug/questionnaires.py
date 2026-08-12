@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Response, status
-from src.dependencies.dependencies import get_questionnaire_service
+from src.dependencies import get_questionnaire_service
 from src.schemas.questionnaires import QuestionnaireCreate, QuestionnaireUpdate, QuestionnaireOut, QuestionnaireDetail
 from src.services.questionnaires import QuestionnaireService
 
@@ -35,8 +35,12 @@ async def get_questionnaire_detail(questionnaire_id: int, questionnaire_version:
 
 
 @questionnaires_router.put("/{questionnaire_id}/{questionnaire_version}", response_model=QuestionnaireOut)
-async def update_questionnaire(questionnaire_id: int, questionnaire_version: int,
-                               new_data: Annotated[QuestionnaireUpdate, Depends()], service: questionnaire_service):
+async def update_questionnaire(
+    questionnaire_id: int,
+    questionnaire_version: int,
+    new_data: Annotated[QuestionnaireUpdate, Depends()],
+    service: questionnaire_service,
+):
     updated = await service.update_questionnaire(questionnaire_id, questionnaire_version, new_data)
     if updated:
         return updated
@@ -54,8 +58,8 @@ async def delete_questionnaire(questionnaire_id: int, questionnaire_version: int
     status_code=status.HTTP_200_OK,
     responses={
         200: {"description": "Questionnaires successfully deactivated."},
-        404: {"description": "Some questionnaires not found."}
-    }
+        404: {"description": "Some questionnaires not found."},
+    },
 )
 async def deactivate_questionnaires(ids: Annotated[list[int], Depends()], service: questionnaire_service):
     await service.deactivate_questionnaires(ids)

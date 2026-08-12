@@ -1,5 +1,7 @@
 from sqlalchemy import select, update
 from src.models.answers import Answer
+from src.models.questionnaire_answers import QuestionnaireAnswer
+from src.models.questions import Question
 
 
 class AnswerRepository:
@@ -7,10 +9,23 @@ class AnswerRepository:
         self.session = session
 
     async def create_answer(self, answer_obj):
+        question = await self.session.get(Question, answer_obj.question_id)
+        attempt = await self.session.get(QuestionnaireAnswer, answer_obj.questionnaire_answer_id)
+        if question is None or attempt is None:
+            raise ValueError("Question and questionnaire attempt must exist before creating an answer")
+        if (
+            question.questionnaire_id,
+            question.questionnaire_version,
+        ) != (
+            attempt.questionnaire_id,
+            attempt.questionnaire_version,
+        ):
+            raise ValueError("The question does not belong to the questionnaire version being answered")
+
         new_answer = Answer(
             question_id=answer_obj.question_id,
             questionnaire_answer_id=answer_obj.questionnaire_answer_id,
-            answer=answer_obj.answer
+            answer=answer_obj.answer,
         )
         self.session.add(new_answer)
         await self.session.flush()

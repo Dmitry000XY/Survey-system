@@ -1,7 +1,8 @@
 from fastapi import HTTPException, status
 from src.repositories.clients import ClientRepository
-from src.schemas.clients import ClientInDB
+from src.schemas.clients import ClientInDB, ClientOutWithAPI
 from src.configurations.constants import generate_api_key
+from src.security import hash_api_key
 
 
 class ClientService:
@@ -12,13 +13,17 @@ class ClientService:
         if await self.client_repository.get_client_by_name(client.client_name):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Client already exists.")
         generated_api_key = generate_api_key()
-        client_data = client.dict()
-        client_data["api_key"] = generated_api_key
-        new_client = ClientInDB(**client_data)
+        new_client = ClientInDB(
+            client_name=client.client_name,
+            api_key_hash=hash_api_key(generated_api_key),
+        )
         created_client = await self.client_repository.create_client(new_client)
-        # Replace hashed API key with the generated (plain) one for the response.
-        created_client.api_key = generated_api_key
-        return created_client
+        return ClientOutWithAPI(
+            client_id=created_client.client_id,
+            client_name=created_client.client_name,
+            time_created=created_client.time_created,
+            api_key=generated_api_key,
+        )
 
     async def get_all_clients(self):
         return await self.client_repository.get_all_clients()

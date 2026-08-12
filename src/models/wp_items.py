@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import BigInteger, String, Text, Boolean, Index, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .wp_base import WPBaseModel
-from .custom_types import timestamp, timestamp_onupdate
+from .custom_types import wp_timestamp, wp_timestamp_onupdate
 
 if TYPE_CHECKING:
     from .wp_forms import WPForm
@@ -35,8 +35,8 @@ class WPItem(WPBaseModel):
     parent_item_id: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     is_draft: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     updated_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    created_at: Mapped[timestamp]
-    updated_at: Mapped[timestamp_onupdate]
+    created_at: Mapped[wp_timestamp]
+    updated_at: Mapped[wp_timestamp_onupdate]
 
     # Relationships:
     # Each item belongs to one form.

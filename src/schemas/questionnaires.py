@@ -1,19 +1,32 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
-from src.models.custom_types import QuestionnaireTagEnum
-from src.schemas.questions import QuestionOut, QuestionBase
-from src.configurations.constants import FIXED_HASH_LENGTH
 
-__all__ = ["QuestionnaireBase", "QuestionnaireCreate", "QuestionnaireCreateWithQuestions", "QuestionnaireCreateNew",
-           "QuestionnaireCreateWithQuestionsNew", "QuestionnaireUpdate", "QuestionnaireOut", "QuestionnaireDetail"]
+from pydantic import BaseModel, ConfigDict, Field
+
+from src.configurations.constants import QUESTIONNAIRE_HASH_LENGTH, QuestionnaireTagEnum
+from src.schemas.questions import QuestionOut, QuestionBase
+
+__all__ = [
+    "QuestionnaireBase",
+    "QuestionnaireCreate",
+    "QuestionnaireCreateWithQuestions",
+    "QuestionnaireCreateNew",
+    "QuestionnaireCreateWithQuestionsNew",
+    "QuestionnaireUpdate",
+    "QuestionnaireOut",
+    "QuestionnaireDetail",
+]
 
 
 class QuestionnaireBase(BaseModel):
-    questionnaire_name: str = Field(..., max_length=64)
-    wordpress_id: int | None = None
+    questionnaire_name: str = Field(..., max_length=255)
+    wordpress_id: int
     tags: list[QuestionnaireTagEnum] = Field(..., description="List of questionnaire tags")
     is_active: bool = True
-    questionnaire_hash: str = Field(..., min_length=FIXED_HASH_LENGTH, max_length=FIXED_HASH_LENGTH)
+    questionnaire_hash: str = Field(
+        ...,
+        min_length=QUESTIONNAIRE_HASH_LENGTH,
+        max_length=QUESTIONNAIRE_HASH_LENGTH,
+    )
 
 
 class QuestionnaireCreate(QuestionnaireBase):
@@ -38,17 +51,13 @@ class QuestionnaireUpdate(QuestionnaireBase):
 
 
 class QuestionnaireOut(QuestionnaireBase):
+    model_config = ConfigDict(from_attributes=True)
+
     questionnaire_id: int
     questionnaire_version: int
     time_created: datetime
 
-    class Config:
-        from_attributes = True
-
 
 # Схема с вложенными вопросами (зависимость)
 class QuestionnaireDetail(QuestionnaireOut):
-    questions: list[QuestionOut] = []
-
-    class Config:
-        from_attributes = True
+    questions: list[QuestionOut] = Field(default_factory=list)
