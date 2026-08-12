@@ -1,13 +1,14 @@
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, List
+
+from pydantic import BaseModel, ConfigDict, Field
+
 from src.schemas.answers import AnswerOut
 
 __all__ = [
     "QuestionnaireAnswerBase",
     "QuestionnaireAnswerCreate",
     "QuestionnaireAnswerOut",
-    "QuestionnaireAnswerDetail"
+    "QuestionnaireAnswerDetail",
 ]
 
 
@@ -19,21 +20,17 @@ class QuestionnaireAnswerBase(BaseModel):
 
 
 class QuestionnaireAnswerCreate(QuestionnaireAnswerBase):
-    time_finished: Optional[datetime] = None
+    time_finished: datetime | None = None
 
 
 class QuestionnaireAnswerOut(QuestionnaireAnswerBase):
+    model_config = ConfigDict(from_attributes=True)
+
     questionnaire_answer_id: int
     time_started: datetime
-    time_finished: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
+    time_finished: datetime | None = None
 
 
 # Детальная схема с вложенными ответами
 class QuestionnaireAnswerDetail(QuestionnaireAnswerOut):
-    answers: List[AnswerOut] = []
-
-    class Config:
-        from_attributes = True
+    answers: list[AnswerOut] = Field(default_factory=list)

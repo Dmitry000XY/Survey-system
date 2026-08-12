@@ -1,50 +1,31 @@
-import logging
+from collections.abc import AsyncGenerator
+from contextlib import AbstractAsyncContextManager
 
-from typing import AsyncGenerator, Callable, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from .session_manager import AsyncSessionManager
+from .wp_settings import get_wp_settings
 
-import src.models  # noqa F401
+__all__ = ["close_wp_database", "get_wp_async_session", "wp_database_session", "wp_global_init"]
 
-from .wp_settings import wp_settings
-
-logger = logging.getLogger(__name__)
-
-__all__ = ["wp_global_init", "get_wp_async_session"]
-
-__async_engine: Optional[AsyncEngine] = None
-__session_factory: Optional[Callable[[], AsyncSession]] = None
+_session_manager = AsyncSessionManager()
 
 
 def wp_global_init() -> None:
-    global __async_engine, __session_factory
-
-    if __session_factory:
-        return
-
-    if not __async_engine:
-        __async_engine = create_async_engine(
-            url=wp_settings.database_url_asyncmy,
-            echo=wp_settings.ECHO
-        )
-
-    __session_factory = async_sessionmaker(__async_engine)
+    settings = get_wp_settings()
+    _session_manager.initialize(settings.database_url_asyncmy, echo=settings.ECHO)
 
 
-async def get_wp_async_session() -> AsyncGenerator:
-    global __session_factory
+async def close_wp_database() -> None:
+    await _session_manager.dispose()
 
-    if not __session_factory:
-        raise ValueError({"message": "You must call wp_global_init() before using this method."})
 
-    session: AsyncSession = __session_factory()
+def wp_database_session() -> AbstractAsyncContextManager[AsyncSession]:
+    """Return an application-level context manager for a WordPress database session."""
+    return _session_manager.session()
 
-    try:
+
+async def get_wp_async_session() -> AsyncGenerator[AsyncSession]:
+    """Provide a WordPress database session as a FastAPI yield dependency."""
+    async with wp_database_session() as session:
         yield session
-        await session.commit()
-    except Exception as error:
-        logger.error("Raises exception: %s", error)
-        raise error
-    finally:
-        await session.rollback()
-        await session.close()

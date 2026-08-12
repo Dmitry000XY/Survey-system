@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Response, status
-from src.dependencies.dependencies import get_answer_service
+from src.dependencies import get_answer_service
 from src.schemas.answers import AnswerCreate, AnswerOut
 from src.services.answers import AnswerService
 
@@ -27,8 +27,12 @@ async def get_answer(question_id: int, questionnaire_answer_id: int, service: an
 
 
 @answers_router.put("/{question_id}/{questionnaire_answer_id}", response_model=AnswerOut)
-async def update_answer(question_id: int, questionnaire_answer_id: int, new_data: Annotated[AnswerCreate, Depends()],
-                        service: answer_service):
+async def update_answer(
+    question_id: int,
+    questionnaire_answer_id: int,
+    new_data: Annotated[AnswerCreate, Depends()],
+    service: answer_service,
+):
     updated = await service.update_answer(question_id, questionnaire_answer_id, new_data)
     if updated:
         return updated

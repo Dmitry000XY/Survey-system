@@ -1,8 +1,25 @@
-from sqlalchemy import select, func, cast, String, text, and_, or_
+from sqlalchemy import String, and_, cast, func, or_, select, text
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import selectinload, with_loader_criteria
+from sqlalchemy.sql.functions import FunctionElement
+
 from src.configurations.constants import ALLOWED_QUESTION_TYPES, ALL_SEARCH_TAGS
-from src.models.wp_forms import WPForm
 from src.models.wp_fields import WPField
+from src.models.wp_forms import WPForm
+
+
+class _OrderedGroupConcat(FunctionElement):
+    """MySQL GROUP_CONCAT with an explicit, deterministic order."""
+
+    type = String()
+    inherit_cache = True
+
+
+@compiles(_OrderedGroupConcat, "mysql")
+def _compile_ordered_group_concat(element, compiler, **kwargs) -> str:
+    value, *order_by = list(element.clauses)
+    rendered_order = ", ".join(compiler.process(item, **kwargs) for item in order_by)
+    return f"GROUP_CONCAT({compiler.process(value, **kwargs)} ORDER BY {rendered_order})"
 
 
 class WPFormRepository:
@@ -20,7 +37,7 @@ class WPFormRepository:
     async def get_all_forms_with_hash(self) -> list[tuple[WPForm, str]]:
         """
         Возвращает список кортежей (WPForm, questionnaire_hash), где questionnaire_hash вычисляется как
-        SHA2( CONCAT( <данные из WPForm>, GROUP_CONCAT( SHA2( CONCAT( <данные из WPField> ), 512) ) ), 512)
+        SHA2(JSON_ARRAY(<form data>, GROUP_CONCAT(SHA2(JSON_ARRAY(<field data>), 256))), 256).
         При этом сначала для сессии устанавливается большой лимит group_concat_max_len,
         а все NULL приводятся к '' через COALESCE.
         Также, форма загружается со всеми связанными WPField через relationship.
@@ -28,70 +45,75 @@ class WPFormRepository:
 
         # Увеличиваем лимит только для этой сессии
         await self.session.execute(
-            text("SET SESSION group_concat_max_len = :max_len")
-            .bindparams(max_len=1_000_000_000)
+            text("SET SESSION group_concat_max_len = :max_len").bindparams(max_len=1_000_000_000)
         )
 
         # Поля из WPForm
-        form_id = func.coalesce(cast(WPForm.id, String), '')
-        form_key = func.coalesce(WPForm.form_key, '')
-        form_name = func.coalesce(WPForm.name, '')
-        form_descr = func.coalesce(WPForm.description, '')
-        form_parent = func.coalesce(cast(WPForm.parent_form_id, String), '')
-        form_logged = func.coalesce(cast(WPForm.logged_in, String), '')
-        form_editable = func.coalesce(cast(WPForm.editable, String), '')
-        form_is_template = func.coalesce(cast(WPForm.is_template, String), '')
-        form_default_tpl = func.coalesce(cast(WPForm.default_template, String), '')
-        form_status = func.coalesce(WPForm.status, '')
-        form_options = func.coalesce(WPForm.options, '')
-        form_created = func.coalesce(cast(WPForm.created_at, String), '')
+        form_id = func.coalesce(cast(WPForm.id, String), "")
+        form_key = func.coalesce(WPForm.form_key, "")
+        form_name = func.coalesce(WPForm.name, "")
+        form_descr = func.coalesce(WPForm.description, "")
+        form_parent = func.coalesce(cast(WPForm.parent_form_id, String), "")
+        form_logged = func.coalesce(cast(WPForm.logged_in, String), "")
+        form_editable = func.coalesce(cast(WPForm.editable, String), "")
+        form_is_template = func.coalesce(cast(WPForm.is_template, String), "")
+        form_default_tpl = func.coalesce(cast(WPForm.default_template, String), "")
+        form_status = func.coalesce(WPForm.status, "")
+        form_options = func.coalesce(WPForm.options, "")
+        form_created = func.coalesce(cast(WPForm.created_at, String), "")
 
         # Хеш каждой записи поля
         field_hash = func.sha2(
-            func.concat(
-                func.coalesce(cast(WPField.id, String), ''),
-                func.coalesce(WPField.field_key, ''),
-                func.coalesce(WPField.name, ''),
-                func.coalesce(WPField.description, ''),
-                func.coalesce(WPField.type, ''),
-                func.coalesce(WPField.default_value, ''),
-                func.coalesce(WPField.options, ''),
-                func.coalesce(cast(WPField.field_order, String), ''),
-                func.coalesce(cast(WPField.required, String), ''),
-                func.coalesce(WPField.field_options, ''),
-                func.coalesce(cast(WPField.form_id, String), ''),
-                func.coalesce(cast(WPField.created_at, String), '')
+            func.json_array(
+                func.coalesce(cast(WPField.id, String), ""),
+                func.coalesce(WPField.field_key, ""),
+                func.coalesce(WPField.name, ""),
+                func.coalesce(WPField.description, ""),
+                func.coalesce(WPField.type, ""),
+                func.coalesce(WPField.default_value, ""),
+                func.coalesce(WPField.options, ""),
+                func.coalesce(cast(WPField.field_order, String), ""),
+                func.coalesce(cast(WPField.required, String), ""),
+                func.coalesce(WPField.field_options, ""),
+                func.coalesce(cast(WPField.form_id, String), ""),
+                func.coalesce(cast(WPField.created_at, String), ""),
             ),
-            512
+            256,
         )
 
-        # Группируем хеши разрешённых полей
-        field_concat_hashes = func.group_concat(
-            field_hash
-            .op("SEPARATOR")("")
+        # Field order and ID make the aggregate stable even when two fields have
+        # the same display order.
+        field_concat_hashes = _OrderedGroupConcat(
+            field_hash,
+            WPField.field_order,
+            WPField.id,
         )
 
         # Общий questionnaire_hash
         questionnaire_hash = func.sha2(
-            func.concat(
-                form_id, form_key, form_name, form_descr, form_parent, form_logged, form_editable,
-                form_is_template, form_default_tpl, form_status, form_options, form_created,
-                func.coalesce(field_concat_hashes, '')
+            func.json_array(
+                form_id,
+                form_key,
+                form_name,
+                form_descr,
+                form_parent,
+                form_logged,
+                form_editable,
+                form_is_template,
+                form_default_tpl,
+                form_status,
+                form_options,
+                form_created,
+                func.coalesce(field_concat_hashes, ""),
             ),
-            512
+            256,
         ).label("questionnaire_hash")
 
         # Условие соединения: только разрешённые типы полей
-        join_cond = and_(
-            WPField.form_id == WPForm.id,
-            WPField.type.in_(ALLOWED_QUESTION_TYPES)
-        )
+        join_cond = and_(WPField.form_id == WPForm.id, WPField.type.in_(ALLOWED_QUESTION_TYPES))
 
         # Оставляем только те анкеты, у которых есть хотя бы один тег
-        tag_filters = [
-            WPForm.form_key.ilike(f"%{tag}%")
-            for tag in ALL_SEARCH_TAGS
-        ]
+        tag_filters = [WPForm.form_key.ilike(f"%{tag}%") for tag in ALL_SEARCH_TAGS]
 
         query = (
             select(WPForm, questionnaire_hash)
@@ -99,11 +121,8 @@ class WPFormRepository:
             .outerjoin(WPField, join_cond)
             .options(
                 selectinload(WPForm.fields),
-                with_loader_criteria(
-                    WPField,
-                    WPField.type.in_(ALLOWED_QUESTION_TYPES),
-                    include_aliases=True
-                ))
+                with_loader_criteria(WPField, WPField.type.in_(ALLOWED_QUESTION_TYPES), include_aliases=True),
+            )
             .group_by(WPForm.id)
         )
         result = await self.session.execute(query)

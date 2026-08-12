@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Response, status
-from src.dependencies.dependencies import get_setting_service
+from src.dependencies import get_setting_service
 from src.schemas.settings import SettingUpdate, SettingOut
 from src.services.settings import SettingService
 

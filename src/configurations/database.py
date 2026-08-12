@@ -1,71 +1,31 @@
-import logging
+from collections.abc import AsyncGenerator
+from contextlib import AbstractAsyncContextManager
 
-from typing import AsyncGenerator, Callable, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from .session_manager import AsyncSessionManager
+from .settings import get_settings
 
-from src.models import BaseModel
-import src.models  # noqa F401
+__all__ = ["close_database", "database_session", "get_async_session", "global_init"]
 
-from .settings import settings
-
-logger = logging.getLogger(__name__)
-
-__all__ = ["global_init", "get_async_session", "create_db_and_tables", "delete_db_and_tables"]
-
-__async_engine: Optional[AsyncEngine] = None
-__session_factory: Optional[Callable[[], AsyncSession]] = None
+_session_manager = AsyncSessionManager()
 
 
 def global_init() -> None:
-    global __async_engine, __session_factory
-
-    if __session_factory:
-        return
-
-    if not __async_engine:
-        __async_engine = create_async_engine(
-            url=settings.database_url_asyncpg,
-            echo=settings.ECHO
-        )
-
-    __session_factory = async_sessionmaker(__async_engine)
+    settings = get_settings()
+    _session_manager.initialize(settings.database_url_asyncpg, echo=settings.ECHO)
 
 
-async def get_async_session() -> AsyncGenerator:
-    global __session_factory
+async def close_database() -> None:
+    await _session_manager.dispose()
 
-    if not __session_factory:
-        raise ValueError({"message": "You must call global_init() before using this method."})
 
-    session: AsyncSession = __session_factory()
+def database_session() -> AbstractAsyncContextManager[AsyncSession]:
+    """Return an application-level context manager for a database session."""
+    return _session_manager.session()
 
-    try:
+
+async def get_async_session() -> AsyncGenerator[AsyncSession]:
+    """Provide a database session as a FastAPI yield dependency."""
+    async with database_session() as session:
         yield session
-        await session.commit()
-    except Exception as error:
-        logger.error("Raises exception: %s", error)
-        raise error
-    finally:
-        await session.rollback()
-        await session.close()
-
-
-async def create_db_and_tables():
-    global __async_engine
-
-    if __async_engine is None:
-        raise ValueError({"message": "You must call global_init() before using this method."})
-
-    async with __async_engine.begin() as conn:
-        await conn.run_sync(BaseModel.metadata.create_all)
-
-
-async def delete_db_and_tables():
-    global __async_engine
-
-    if __async_engine is None:
-        raise ValueError({"message": "You must call global_init() before using this method."})
-
-    async with __async_engine.begin() as conn:
-        await conn.run_sync(BaseModel.metadata.drop_all)

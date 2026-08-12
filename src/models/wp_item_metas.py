@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import BigInteger, Text, Index, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .wp_base import WPBaseModel
-from .custom_types import timestamp
+from .custom_types import wp_timestamp
 
 if TYPE_CHECKING:
     from .wp_fields import WPField
@@ -22,7 +22,7 @@ class WPItemMeta(WPBaseModel):
     meta_value: Mapped[str | None] = mapped_column(Text, nullable=True)
     field_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("wp_frm_fields.id"), nullable=False)
     item_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("wp_frm_items.id"), nullable=False)
-    created_at: Mapped[timestamp]
+    created_at: Mapped[wp_timestamp]
 
     # Relationships:
     # Each meta belongs to one submitted item.

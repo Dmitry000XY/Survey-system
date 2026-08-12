@@ -1,16 +1,16 @@
 from sqlalchemy import select, update
 from src.models.clients import Client
-from src.schemas.clients import ClientCreate, ClientUpdate
+from src.schemas.clients import ClientInDB, ClientUpdate
 
 
 class ClientRepository:
     def __init__(self, session):
         self.session = session
 
-    async def create_client(self, client: ClientCreate):
+    async def create_client(self, client: ClientInDB):
         new_client = Client(
             client_name=client.client_name,
-            api_key=client.api_key
+            api_key_hash=client.api_key_hash,
         )
         self.session.add(new_client)
         await self.session.flush()
@@ -30,15 +30,11 @@ class ClientRepository:
         return res.scalars().first()
 
     async def update_client(self, client_id: int, new_data: ClientUpdate):
-        query = (
-            update(Client)
-            .where(Client.client_id == client_id)
-            .values(
-                client_name=new_data.client_name,
-                api_key=new_data.api_key
-            )
-            .returning(Client)
-        )
+        values = new_data.model_dump(exclude_unset=True)
+        if not values:
+            return await self.get_client(client_id)
+
+        query = update(Client).where(Client.client_id == client_id).values(**values).returning(Client)
         res = await self.session.execute(query)
         return res.scalar()
 

@@ -8,11 +8,7 @@ class UserRepository:
         self.session = session
 
     async def create_user(self, user: UserCreate):
-        new_user = User(
-            user_id=user.user_id,
-            login=user.login,
-            password=user.password
-        )
+        new_user = User(user_id=user.user_id, login=user.login, password=user.password)
         self.session.add(new_user)
         await self.session.flush()
         return new_user
@@ -26,15 +22,11 @@ class UserRepository:
         return await self.session.get(User, user_id)
 
     async def update_user(self, user_id: int, new_data: UserUpdate):
-        query = (
-            update(User)
-            .where(User.user_id == user_id)
-            .values(
-                login=new_data.login,
-                password=new_data.password
-            )
-            .returning(User)
-        )
+        values = new_data.model_dump(exclude_unset=True)
+        if not values:
+            return await self.get_user(user_id)
+
+        query = update(User).where(User.user_id == user_id).values(**values).returning(User)
         res = await self.session.execute(query)
         return res.scalar()
 

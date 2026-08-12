@@ -14,10 +14,10 @@ class QuestionRepository:
             questionnaire_version=question.questionnaire_version,
             question=question.question,
             question_order=question.question_order,
-            answers=question.answers,
+            answer_options=[option.model_dump(mode="json") for option in question.answer_options],
             answer_type=question.answer_type,
             dependencies=question.dependencies.model_dump(),
-            wordpress_id=question.wordpress_id
+            wordpress_id=question.wordpress_id,
         )
         self.session.add(new_question)
         await self.session.flush()
@@ -31,10 +31,10 @@ class QuestionRepository:
                 questionnaire_version=question.questionnaire_version,
                 question=question.question,
                 question_order=question.question_order,
-                answers=question.answers,
+                answer_options=[option.model_dump(mode="json") for option in question.answer_options],
                 answer_type=question.answer_type,
                 dependencies=question.dependencies.model_dump(),
-                wordpress_id=question.wordpress_id
+                wordpress_id=question.wordpress_id,
             )
             new_questions.append(new_question)
         self.session.add_all(new_questions)
@@ -56,10 +56,10 @@ class QuestionRepository:
             .values(
                 question=new_data.question,
                 question_order=new_data.question_order,
-                answers=new_data.answers,
+                answer_options=[option.model_dump(mode="json") for option in new_data.answer_options],
                 answer_type=new_data.answer_type,
                 dependencies=new_data.dependencies.model_dump(),
-                wordpress_id=new_data.wordpress_id
+                wordpress_id=new_data.wordpress_id,
             )
             .returning(Question)
         )

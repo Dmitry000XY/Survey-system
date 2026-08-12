@@ -1,8 +1,13 @@
 import secrets
+from datetime import UTC, datetime
+from enum import StrEnum
+
+
+INITIAL_SYNCHRONIZATION_TIME = datetime(1970, 1, 1, tzinfo=UTC)
 
 # Настройки для пользователя
 MIN_LOGIN_LENGTH = 3
-MAX_LOGIN_LENGTH = 32
+MAX_LOGIN_LENGTH = 60
 
 MIN_PASSWORD_LENGTH = 8
 MAX_PASSWORD_LENGTH = 128
@@ -10,12 +15,22 @@ MAX_PASSWORD_LENGTH = 128
 # Настройки для клиента
 MIN_CLIENT_NAME_LENGTH = 1
 MAX_CLIENT_NAME_LENGTH = 64
+API_KEY_ENTROPY_BYTES = 48
+API_KEY_LENGTH = 64
 
-# Фиксированная длина для хэшей (например, api_key, questionnaire_hash)
-FIXED_HASH_LENGTH = 128
+# SHA-256 is stored as a lowercase hexadecimal string.
+SHA256_HEX_LENGTH = 64
+QUESTIONNAIRE_HASH_LENGTH = SHA256_HEX_LENGTH
+
 
 def generate_api_key() -> str:
-    return secrets.token_urlsafe(96)  # Генерирует 128-символьный api-key
+    """Generate a high-entropy API key that is shown to the client only once."""
+
+    api_key = secrets.token_urlsafe(API_KEY_ENTROPY_BYTES)
+    if len(api_key) != API_KEY_LENGTH:
+        raise RuntimeError("Generated API key has an unexpected length")
+    return api_key
+
 
 # Теги для поиска в WP БД
 SEARCH_TAG_VISIBLE = "bot"
@@ -32,44 +47,49 @@ ALL_SEARCH_TAGS = [
     SEARCH_TAG_MONTHLY,
 ]
 
+
+class QuestionnaireTagEnum(StrEnum):
+    VISIBLE = "visible"
+    REGISTRATION = "registration"
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+
+
 # Теги для сохранения в PostgreSQL
-QUESTIONNAIRE_TAG_VISIBLE = "visible"
-QUESTIONNAIRE_TAG_REGISTRATION = "registration"
-QUESTIONNAIRE_TAG_DAILY = "daily"
-QUESTIONNAIRE_TAG_WEEKLY = "weekly"
-QUESTIONNAIRE_TAG_MONTHLY = "monthly"
-# Список всех тегов для PostgreSQL (должен соответствовать ALL_SEARCH_TAGS)
-ALL_QUESTIONNAIRE_TAGS = [
-    QUESTIONNAIRE_TAG_VISIBLE,
-    QUESTIONNAIRE_TAG_REGISTRATION,
-    QUESTIONNAIRE_TAG_DAILY,
-    QUESTIONNAIRE_TAG_WEEKLY,
-    QUESTIONNAIRE_TAG_MONTHLY,
-]
+QUESTIONNAIRE_TAG_VISIBLE = QuestionnaireTagEnum.VISIBLE.value
+QUESTIONNAIRE_TAG_REGISTRATION = QuestionnaireTagEnum.REGISTRATION.value
+QUESTIONNAIRE_TAG_DAILY = QuestionnaireTagEnum.DAILY.value
+QUESTIONNAIRE_TAG_WEEKLY = QuestionnaireTagEnum.WEEKLY.value
+QUESTIONNAIRE_TAG_MONTHLY = QuestionnaireTagEnum.MONTHLY.value
+ALL_QUESTIONNAIRE_TAGS = [tag.value for tag in QuestionnaireTagEnum]
 
 # Список всех тегов (необходимо, чтобы ALL_SEARCH_TAGS и ALL_QUESTIONNAIRE_TAGS соответствовали друг другу)
 ALL_TAGS = list(zip(ALL_SEARCH_TAGS, ALL_QUESTIONNAIRE_TAGS))
 
+
+class AnswerTypeEnum(StrEnum):
+    DIVIDER = "DIVIDER"
+    NAME = "NAME"
+    SELECT = "SELECT"
+    EMAIL = "EMAIL"
+    END_DIVIDER = "END_DIVIDER"
+    TEXT = "TEXT"
+    PASSWORD = "PASSWORD"
+    DATE = "DATE"
+    PHONE = "PHONE"
+    RADIO = "RADIO"
+    CHECKBOX = "CHECKBOX"
+    TOGGLE = "TOGGLE"
+    HTML = "HTML"
+    USER_ID = "USER_ID"
+    NUMBER = "NUMBER"
+    CAPTCHA = "CAPTCHA"
+    TEXTAREA = "TEXTAREA"
+
+
 # Список всех типов вопросов, которые бывают в WPForms
-ALL_QUESTION_TYPES = [
-    "divider",
-    "name",
-    "select",
-    "email",
-    "end_divider",
-    "text",
-    "password",
-    "date",
-    "phone",
-    "radio",
-    "checkbox",
-    "toggle",
-    "html",
-    "user_id",
-    "number",
-    "captcha",
-    "textarea",
-]
+ALL_QUESTION_TYPES = [answer_type.value.lower() for answer_type in AnswerTypeEnum]
 
 # Из них – только эти мы показываем в боте
 ALLOWED_QUESTION_TYPES = [
@@ -85,11 +105,11 @@ ALLOWED_QUESTION_TYPES = [
     "radio",
     "checkbox",
     "toggle",
-    # "html",
+    "html",
     "user_id",
     "number",
     # "captcha",
-    "textarea"
+    "textarea",
 ]
 
 SYNC_INTERVAL_SECONDS = 300

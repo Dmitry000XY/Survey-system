@@ -1,9 +1,10 @@
-from typing import TYPE_CHECKING, List
-from sqlalchemy import CheckConstraint
+from typing import TYPE_CHECKING
+
+from sqlalchemy import CheckConstraint, String
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
 from .base import BaseModel
-from .custom_types import serialpk, str64_idx, str32_idx, timestamp
+from .custom_types import identitypk, str64, timestamp
 
 if TYPE_CHECKING:
     from .questionnaire_answers import QuestionnaireAnswer
@@ -13,21 +14,22 @@ if TYPE_CHECKING:
 class Client(BaseModel):
     __tablename__ = "clients"
     __table_args__ = (
-        # Проверка: api_key (хэш) должен состоять ровно из 64 символов
-        # CheckConstraint("char_length(api_key) = 64", name="ck_clients_api_key_len"),  # TODO
-        # Проверка: имя клиента не должно быть пустым
         CheckConstraint("char_length(client_name) >= 1", name="ck_clients_name_nonempty"),
+        CheckConstraint("char_length(api_key_hash) = 64", name="ck_clients_api_key_hash_length"),
     )
 
-    client_id: Mapped[serialpk]
-    client_name: Mapped[str32_idx] = mapped_column(unique=True)
-    # api_key – хэш в виде строки длиной 64 символа, с индексом для быстрого поиска
-    api_key: Mapped[str64_idx]
+    client_id: Mapped[identitypk]
+    client_name: Mapped[str64] = mapped_column(unique=True)
+    api_key_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     time_created: Mapped[timestamp]
 
-    user_clients: Mapped[List["UserClient"]] = relationship(
-        "UserClient", back_populates="client",  # cascade="all, delete-orphan"  # TODO
+    user_clients: Mapped[list["UserClient"]] = relationship(
+        "UserClient",
+        back_populates="client",
+        passive_deletes=True,
     )
-    questionnaire_answers: Mapped[List["QuestionnaireAnswer"]] = relationship(
-        "QuestionnaireAnswer", back_populates="client",  # cascade="all, delete-orphan"  # TODO
+    questionnaire_answers: Mapped[list["QuestionnaireAnswer"]] = relationship(
+        "QuestionnaireAnswer",
+        back_populates="client",
+        passive_deletes=True,
     )

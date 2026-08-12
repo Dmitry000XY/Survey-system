@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import BigInteger, String, Text, Integer, Index, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .wp_base import WPBaseModel
-from .custom_types import timestamp
+from .custom_types import wp_timestamp
 
 if TYPE_CHECKING:
     from .wp_forms import WPForm
@@ -27,7 +27,7 @@ class WPField(WPBaseModel):
     required: Mapped[int | None] = mapped_column(Integer, nullable=True)
     field_options: Mapped[str | None] = mapped_column(Text, nullable=True)
     form_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("wp_frm_forms.id"), nullable=True)
-    created_at: Mapped[timestamp]
+    created_at: Mapped[wp_timestamp]
 
     # Relationship: Each field belongs to one form.
     form: Mapped["WPForm"] = relationship("WPForm", back_populates="fields")

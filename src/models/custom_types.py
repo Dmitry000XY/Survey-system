@@ -1,57 +1,58 @@
-from enum import Enum
-from typing import Annotated, Optional
 from datetime import datetime
-from sqlalchemy import Integer, String, TIMESTAMP, func
-from sqlalchemy.orm import mapped_column
+from typing import Annotated
 
-from src.configurations.constants import ALL_QUESTION_TYPES, ALL_QUESTIONNAIRE_TAGS
+from sqlalchemy import BigInteger, DateTime, Identity, Integer, String, TIMESTAMP, func
+from sqlalchemy.orm import mapped_column
 
 # Целочисленные типы
 serialpk = Annotated[int, mapped_column(Integer, primary_key=True, autoincrement=True)]
+identitypk = Annotated[int, mapped_column(Integer, Identity(), primary_key=True)]
 intpk = Annotated[int, mapped_column(Integer, primary_key=True, autoincrement=False)]
 int_notnull = Annotated[int, mapped_column(Integer, nullable=False)]
 
+# External identifiers can exceed the signed 32-bit integer range.
+bigintpk = Annotated[int, mapped_column(BigInteger, primary_key=True, autoincrement=False)]
+bigint_notnull = Annotated[int, mapped_column(BigInteger, nullable=False)]
+
 # Строковые типы фиксированной длины
-str32 = Annotated[str, mapped_column(String(32), nullable=False)]
+str60 = Annotated[str, mapped_column(String(60), nullable=False)]
 str64 = Annotated[str, mapped_column(String(64), nullable=False)]
 
-# Строки с индексированием
-str32_idx = Annotated[str, mapped_column(String(32), nullable=False, index=True)]
-str64_idx = Annotated[str, mapped_column(String(64), nullable=False, index=True)]
-str128_idx = Annotated[str, mapped_column(String(128), nullable=False, index=True)]
+# PostgreSQL timestamps use the database server clock and preserve the timezone.
+timestamp = Annotated[
+    datetime,
+    mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    ),
+]
+timestamp_nullable = Annotated[datetime | None, mapped_column(DateTime(timezone=True), nullable=True)]
+timestamp_onupdate = Annotated[
+    datetime,
+    mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    ),
+]
 
-# Timestamp типы
-timestamp = Annotated[datetime, mapped_column(
-    TIMESTAMP(timezone=True),
-    server_default=func.localtimestamp(),
-    nullable=False
-)]
-timestamp_nullable = Annotated[Optional[datetime], mapped_column(
-    TIMESTAMP(timezone=True),
-    nullable=True
-)]
-timestamp_onupdate = Annotated[datetime, mapped_column(
-    TIMESTAMP(timezone=True),
-    server_default=func.localtimestamp(),
-    onupdate=func.localtimestamp(),
-    nullable=False
-)]
-timestamp_onupdate_nullable = Annotated[Optional[datetime], mapped_column(
-    TIMESTAMP(timezone=True),
-    server_default=func.localtimestamp(),
-    onupdate=func.localtimestamp(),
-    nullable=True
-)]
-
-# Генерируем перечисление из константы
-AnswerTypeEnum = Enum(
-    "AnswerTypeEnum",
-    {item.upper(): item.upper() for item in ALL_QUESTION_TYPES},
-    type=str  # Чтобы члены были подтипом str (Python 3.11+)
-)
-
-QuestionnaireTagEnum = Enum(
-    "QuestionnaireTagEnum",
-    {t.upper(): t for t in ALL_QUESTIONNAIRE_TAGS},
-    type=str
-)
+# WordPress/MySQL timestamps retain the legacy mapping of the existing tables.
+wp_timestamp = Annotated[
+    datetime,
+    mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=func.localtimestamp(),
+        nullable=False,
+    ),
+]
+wp_timestamp_onupdate = Annotated[
+    datetime,
+    mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=func.localtimestamp(),
+        onupdate=func.localtimestamp(),
+        nullable=False,
+    ),
+]

@@ -1,12 +1,11 @@
 import logging
-from src.configurations.constants import ALL_TAGS
+from src.configurations.constants import ALL_TAGS, AnswerTypeEnum, QuestionnaireTagEnum
 from src.extras.PhpSerializer import decode_php_serialized
-from src.models.custom_types import AnswerTypeEnum, QuestionnaireTagEnum
 from src.models.wp_forms import WPForm
 from src.models.wp_fields import WPField
 from src.models.questionnaires import Questionnaire
 from src.schemas.dependencies import Dependencies, ShowHideEnum, AllAnyEnum, Condition, ConditionOperatorEnum
-from src.schemas.questions import QuestionBase
+from src.schemas.questions import AnswerOption, QuestionBase
 from src.schemas.questionnaires import QuestionnaireCreateWithQuestions, QuestionnaireCreateWithQuestionsNew
 
 logger = logging.getLogger(__name__)
@@ -20,22 +19,9 @@ class WPToQuestionnaireAdapter:
       - QuestionnaireCreateWithQuestionsNew, если existing_questionnaire == None
     """
 
-    def adapt(self,
-              wp_form: WPForm,
-              existing_questionnaire: Questionnaire | None,
-              new_hash: str) -> QuestionnaireCreateWithQuestions | QuestionnaireCreateWithQuestionsNew:
-
-        questionnaire_kwargs = {
-            "questionnaire_name": wp_form.name,
-            "wordpress_id": wp_form.id,
-            "is_active": True,
-            "tags": self._extract_tags(wp_form),
-            "questionnaire_hash": new_hash,
-        }
-
-        if existing_questionnaire:
-            questionnaire_kwargs["questionnaire_id"] = existing_questionnaire.questionnaire_id
-            questionnaire_kwargs["questionnaire_version"] = existing_questionnaire.questionnaire_version + 1
+    def adapt(
+        self, wp_form: WPForm, existing_questionnaire: Questionnaire | None, new_hash: str
+    ) -> QuestionnaireCreateWithQuestions | QuestionnaireCreateWithQuestionsNew:
 
         # Составляем список вопросов
         questions: list[QuestionBase] = []
@@ -43,24 +29,40 @@ class WPToQuestionnaireAdapter:
             question = QuestionBase(
                 question=field.name or "",
                 question_order=field.field_order,
-                answers=self._decode_answers(field),
+                answer_options=self._decode_answer_options(field),
                 answer_type=self._decode_answer_type(field),
                 dependencies=self._decode_dependencies(field),
                 wordpress_id=field.id,
             )
             questions.append(question)
 
-        questionnaire_kwargs["questions"] = questions
-
         if existing_questionnaire:
-            return QuestionnaireCreateWithQuestions(**questionnaire_kwargs)
-        else:
-            return QuestionnaireCreateWithQuestionsNew(**questionnaire_kwargs)
+            return QuestionnaireCreateWithQuestions(
+                questionnaire_id=existing_questionnaire.questionnaire_id,
+                questionnaire_version=existing_questionnaire.questionnaire_version + 1,
+                questionnaire_name=wp_form.name or "",
+                wordpress_id=wp_form.id,
+                is_active=True,
+                tags=self._extract_tags(wp_form),
+                questionnaire_hash=new_hash,
+                questions=questions,
+            )
 
-    def adapt_all(self, data: list[tuple[WPForm, Questionnaire | None, str]]
-                  ) -> list[QuestionnaireCreateWithQuestions | QuestionnaireCreateWithQuestionsNew]:
-        return [self.adapt(wp_form, existing_questionnaire, new_hash)
-                for wp_form, existing_questionnaire, new_hash in data]
+        return QuestionnaireCreateWithQuestionsNew(
+            questionnaire_name=wp_form.name or "",
+            wordpress_id=wp_form.id,
+            is_active=True,
+            tags=self._extract_tags(wp_form),
+            questionnaire_hash=new_hash,
+            questions=questions,
+        )
+
+    def adapt_all(
+        self, data: list[tuple[WPForm, Questionnaire | None, str]]
+    ) -> list[QuestionnaireCreateWithQuestions | QuestionnaireCreateWithQuestionsNew]:
+        return [
+            self.adapt(wp_form, existing_questionnaire, new_hash) for wp_form, existing_questionnaire, new_hash in data
+        ]
 
     @staticmethod
     def _extract_tags(form: WPForm) -> list[QuestionnaireTagEnum]:
@@ -69,23 +71,32 @@ class WPToQuestionnaireAdapter:
         return [QuestionnaireTagEnum(tag) for search_tag, tag in ALL_TAGS if search_tag in form_key]
 
     @staticmethod
-    def _decode_answers(field: WPField) -> list[str] | None:
-        """Парсим field.options через PhpSerializer, возвращаем список value."""
+    def _decode_answer_options(field: WPField) -> list[AnswerOption]:
+        """Decode Formidable options without losing their display labels."""
 
         raw = field.options
         if not raw:
-            return None
+            return []
 
         try:
             options = decode_php_serialized(raw)
             if isinstance(options, dict):
                 options = list(options.values())
-            # Ожидаем список словарей с ключом 'value'
-            return [item.get("value", "") for item in options if item.get("value", "")]
+            if not isinstance(options, list):
+                return []
+
+            result = []
+            for item in options:
+                if not isinstance(item, dict) or "value" not in item:
+                    continue
+                value = item["value"]
+                label = str(item.get("label", value))
+                result.append(AnswerOption(label=label, value=value))
+            return result
 
         except Exception as error:
             logger.error("Failed to decode answers for field %s: %s", field.id, error)
-            return None
+            return []
 
     @staticmethod
     def _decode_answer_type(field: WPField) -> AnswerTypeEnum:
@@ -114,9 +125,20 @@ class WPToQuestionnaireAdapter:
             # Если не получилось, возвращаем пустые зависимости
             return Dependencies(show_hide=ShowHideEnum.SHOW, all_any=AllAnyEnum.ALL, conditions=[])
 
-        # show_hide и all_any
-        show_hide = ShowHideEnum(data.get("show_hide", "").upper())
-        all_any = AllAnyEnum(data.get("any_all", "").upper())
+        if not isinstance(data, dict):
+            return Dependencies()
+
+        try:
+            show_hide = ShowHideEnum(str(data.get("show_hide", "SHOW")).upper())
+        except ValueError:
+            logger.warning("Unknown show/hide mode in field %s; defaulting to SHOW", field.id)
+            show_hide = ShowHideEnum.SHOW
+
+        try:
+            all_any = AllAnyEnum(str(data.get("any_all", "ALL")).upper())
+        except ValueError:
+            logger.warning("Unknown any/all mode in field %s; defaulting to ALL", field.id)
+            all_any = AllAnyEnum.ALL
 
         # Три параллельных списка: hide_field, hide_field_cond, hide_opt
         flds = data.get("hide_field", [])

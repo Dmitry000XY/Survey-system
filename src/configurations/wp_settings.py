@@ -1,23 +1,30 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from functools import cache
+
+from pydantic import SecretStr
+from sqlalchemy import URL
+
+from .base_settings import ProjectSettings
 
 
-class WPSettings(BaseSettings):
+class WPSettings(ProjectSettings):
     WP_DB_HOST: str
     WP_DB_PORT: int
     WP_DB_USER: str
-    WP_DB_PASS: str
+    WP_DB_PASS: SecretStr
     WP_DB_NAME: str
-    ECHO: bool = True  # TODO
 
     @property
-    def database_url_asyncmy(self) -> str:
-        return f"mysql+asyncmy://{self.WP_DB_USER}:{self.WP_DB_PASS}@{self.WP_DB_HOST}:{self.WP_DB_PORT}/{self.WP_DB_NAME}"
+    def database_url_asyncmy(self) -> URL:
+        return URL.create(
+            drivername="mysql+asyncmy",
+            username=self.WP_DB_USER,
+            password=self.WP_DB_PASS.get_secret_value(),
+            host=self.WP_DB_HOST,
+            port=self.WP_DB_PORT,
+            database=self.WP_DB_NAME,
+        )
 
-    @property
-    def database_url_mysqldb(self) -> str:
-        return f"mysql+mysqldb://{self.WP_DB_USER}:{self.WP_DB_PASS}@{self.WP_DB_HOST}:{self.WP_DB_PORT}/{self.WP_DB_NAME}"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra='ignore')
-
-
-wp_settings = WPSettings()
+@cache
+def get_wp_settings() -> WPSettings:
+    return WPSettings()

@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
 from src.configurations.constants import MIN_CLIENT_NAME_LENGTH, MAX_CLIENT_NAME_LENGTH
 
 __all__ = ["ClientBase", "ClientCreate", "ClientUpdate", "ClientOut", "ClientInDB", "ClientOutWithAPI"]
@@ -16,7 +18,7 @@ class ClientCreate(ClientBase):
 
 # Internal schema for repository: includes the generated API key.
 class ClientInDB(ClientBase):
-    api_key: str
+    api_key_hash: str
 
 
 # Schema for updating client: API key cannot be changed.
@@ -26,11 +28,10 @@ class ClientUpdate(BaseModel):
 
 # Schema for outgoing data: API key is not returned.
 class ClientOut(ClientBase):
+    model_config = ConfigDict(from_attributes=True)
+
     client_id: int
     time_created: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # Schema for outgoing data when creating client: includes the generated API key.
