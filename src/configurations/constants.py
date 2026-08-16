@@ -1,4 +1,3 @@
-import secrets
 from datetime import UTC, datetime
 from enum import StrEnum
 
@@ -11,25 +10,19 @@ MAX_LOGIN_LENGTH = 60
 
 MIN_PASSWORD_LENGTH = 8
 MAX_PASSWORD_LENGTH = 128
+MIN_PASSWORD_HASH_LENGTH = 32
+MAX_PASSWORD_HASH_LENGTH = 255
 
 # Настройки для клиента
 MIN_CLIENT_NAME_LENGTH = 1
 MAX_CLIENT_NAME_LENGTH = 64
 API_KEY_ENTROPY_BYTES = 48
-API_KEY_LENGTH = 64
+API_KEY_LENGTH = 64  # Must be ceil(4 * API_KEY_ENTROPY_BYTES / 3)
+API_KEY_GENERATION_ATTEMPTS = 3
 
 # SHA-256 is stored as a lowercase hexadecimal string.
 SHA256_HEX_LENGTH = 64
 QUESTIONNAIRE_HASH_LENGTH = SHA256_HEX_LENGTH
-
-
-def generate_api_key() -> str:
-    """Generate a high-entropy API key that is shown to the client only once."""
-
-    api_key = secrets.token_urlsafe(API_KEY_ENTROPY_BYTES)
-    if len(api_key) != API_KEY_LENGTH:
-        raise RuntimeError("Generated API key has an unexpected length")
-    return api_key
 
 
 # Теги для поиска в WP БД

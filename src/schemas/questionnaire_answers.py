@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PositiveInt
 
 from src.schemas.answers import AnswerOut
 
@@ -9,17 +9,22 @@ __all__ = [
     "QuestionnaireAnswerCreate",
     "QuestionnaireAnswerOut",
     "QuestionnaireAnswerDetail",
+    "QuestionnaireAnswerUpdate",
 ]
 
 
 class QuestionnaireAnswerBase(BaseModel):
-    user_id: int
-    questionnaire_id: int
-    questionnaire_version: int
-    client_id: int
+    user_id: PositiveInt
+    questionnaire_id: PositiveInt
+    questionnaire_version: PositiveInt
+    client_id: PositiveInt
 
 
 class QuestionnaireAnswerCreate(QuestionnaireAnswerBase):
+    time_finished: datetime | None = None
+
+
+class QuestionnaireAnswerUpdate(BaseModel):
     time_finished: datetime | None = None
 
 
@@ -31,6 +36,5 @@ class QuestionnaireAnswerOut(QuestionnaireAnswerBase):
     time_finished: datetime | None = None
 
 
-# Детальная схема с вложенными ответами
 class QuestionnaireAnswerDetail(QuestionnaireAnswerOut):
     answers: list[AnswerOut] = Field(default_factory=list)

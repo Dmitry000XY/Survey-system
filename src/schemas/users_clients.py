@@ -1,12 +1,12 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, PositiveInt
 
 __all__ = ["UserClientBase", "UserClientCreate", "UserClientOut"]
 
 
 class UserClientBase(BaseModel):
-    user_id: int
-    client_id: int
-    user_client_id: int
+    user_id: PositiveInt
+    client_id: PositiveInt
+    user_client_id: PositiveInt
 
 
 class UserClientCreate(UserClientBase):

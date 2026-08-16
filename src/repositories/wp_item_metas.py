@@ -15,10 +15,7 @@ class WPItemMetaRepository:
         return await self.session.get(WPItemMeta, meta_id)
 
     async def get_item_meta_by_item_and_field_id(self, item_id: int, field_id: int) -> list[WPItemMeta]:
-        query = select(WPItemMeta).where(
-            WPItemMeta.item_id == item_id,
-            WPItemMeta.field_id == field_id
-        )
+        query = select(WPItemMeta).where(WPItemMeta.item_id == item_id, WPItemMeta.field_id == field_id)
         res = await self.session.execute(query)
         return res.scalars().all()  # TODO Only one result
 
@@ -31,11 +28,7 @@ class WPItemMetaRepository:
         query = (
             update(WPItemMeta)
             .where(WPItemMeta.id == meta_id)
-            .values(
-                meta_value=new_data.meta_value,
-                field_id=new_data.field_id,
-                item_id=new_data.item_id
-            )
+            .values(meta_value=new_data.meta_value, field_id=new_data.field_id, item_id=new_data.item_id)
             .returning(WPItemMeta)
         )
         res = await self.session.execute(query)

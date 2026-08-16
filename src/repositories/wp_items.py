@@ -33,7 +33,7 @@ class WPItemRepository:
                 user_id=new_data.user_id,
                 parent_item_id=new_data.parent_item_id,
                 is_draft=new_data.is_draft,
-                updated_by=new_data.updated_by
+                updated_by=new_data.updated_by,
             )
             .returning(WPItem)
         )

@@ -71,6 +71,14 @@ class WPToQuestionnaireAdapter:
         return [QuestionnaireTagEnum(tag) for search_tag, tag in ALL_TAGS if search_tag in form_key]
 
     @staticmethod
+    def _as_text(value: object, *, default: str = "") -> str:
+        if isinstance(value, str):
+            return value
+        if isinstance(value, int | float | bool):
+            return str(value)
+        return default
+
+    @staticmethod
     def _decode_answer_options(field: WPField) -> list[AnswerOption]:
         """Decode Formidable options without losing their display labels."""
 
@@ -90,7 +98,7 @@ class WPToQuestionnaireAdapter:
                 if not isinstance(item, dict) or "value" not in item:
                     continue
                 value = item["value"]
-                label = str(item.get("label", value))
+                label = WPToQuestionnaireAdapter._as_text(item.get("label", value))
                 result.append(AnswerOption(label=label, value=value))
             return result
 
@@ -129,13 +137,13 @@ class WPToQuestionnaireAdapter:
             return Dependencies()
 
         try:
-            show_hide = ShowHideEnum(str(data.get("show_hide", "SHOW")).upper())
+            show_hide = ShowHideEnum(WPToQuestionnaireAdapter._as_text(data.get("show_hide"), default="SHOW").upper())
         except ValueError:
             logger.warning("Unknown show/hide mode in field %s; defaulting to SHOW", field.id)
             show_hide = ShowHideEnum.SHOW
 
         try:
-            all_any = AllAnyEnum(str(data.get("any_all", "ALL")).upper())
+            all_any = AllAnyEnum(WPToQuestionnaireAdapter._as_text(data.get("any_all"), default="ALL").upper())
         except ValueError:
             logger.warning("Unknown any/all mode in field %s; defaulting to ALL", field.id)
             all_any = AllAnyEnum.ALL
@@ -156,7 +164,7 @@ class WPToQuestionnaireAdapter:
                 Condition(
                     field_id=int(fld),
                     condition=cond_enum,
-                    value=str(val),
+                    value=WPToQuestionnaireAdapter._as_text(val),
                 )
             )
 

@@ -15,6 +15,5 @@ class SettingUpdate(SettingBase):
     pass
 
 
-# В схеме для настроек нет смысла возвращать id, так как таблица всегда содержит единственную запись
 class SettingOut(SettingBase):
     model_config = ConfigDict(from_attributes=True)

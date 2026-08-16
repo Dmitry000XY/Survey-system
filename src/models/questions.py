@@ -36,6 +36,7 @@ class Question(BaseModel):
             name="uq_questions_version_wordpress_id",
         ),
         CheckConstraint("question_order >= 0", name="ck_questions_order_nonnegative"),
+        CheckConstraint("wordpress_id > 0", name="ck_questions_wordpress_id_positive"),
         CheckConstraint("jsonb_typeof(answer_options) = 'array'", name="ck_questions_answer_options_array"),
         CheckConstraint("jsonb_typeof(dependencies) = 'object'", name="ck_questions_dependencies_object"),
         CheckConstraint(

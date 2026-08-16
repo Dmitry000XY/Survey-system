@@ -27,4 +27,5 @@ class WPSettings(ProjectSettings):
 
 @cache
 def get_wp_settings() -> WPSettings:
+    # noinspection PyArgumentList
     return WPSettings()

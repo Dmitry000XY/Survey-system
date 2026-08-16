@@ -1,8 +1,6 @@
 import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from types import SimpleNamespace
-from typing import cast
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,8 +19,8 @@ class _SynchronizationServiceStub:
 
 def test_synchronization_loop_uses_session_context_managers(monkeypatch: pytest.MonkeyPatch) -> None:
     events: list[str] = []
-    session = cast(AsyncSession, SimpleNamespace())
-    wp_session = cast(AsyncSession, SimpleNamespace())
+    session = AsyncSession()
+    wp_session = AsyncSession()
 
     @asynccontextmanager
     async def database_session() -> AsyncGenerator[AsyncSession]:

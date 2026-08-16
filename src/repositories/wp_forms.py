@@ -8,14 +8,14 @@ from src.models.wp_fields import WPField
 from src.models.wp_forms import WPForm
 
 
-class _OrderedGroupConcat(FunctionElement):
+class OrderedGroupConcat(FunctionElement):
     """MySQL GROUP_CONCAT with an explicit, deterministic order."""
 
     type = String()
     inherit_cache = True
 
 
-@compiles(_OrderedGroupConcat, "mysql")
+@compiles(OrderedGroupConcat, "mysql")
 def _compile_ordered_group_concat(element, compiler, **kwargs) -> str:
     value, *order_by = list(element.clauses)
     rendered_order = ", ".join(compiler.process(item, **kwargs) for item in order_by)
@@ -83,7 +83,7 @@ class WPFormRepository:
 
         # Field order and ID make the aggregate stable even when two fields have
         # the same display order.
-        field_concat_hashes = _OrderedGroupConcat(
+        field_concat_hashes = OrderedGroupConcat(
             field_hash,
             WPField.field_order,
             WPField.id,

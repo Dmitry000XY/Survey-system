@@ -1,5 +1,17 @@
 import hashlib
 import hmac
+import secrets
+
+from src.configurations.constants import API_KEY_ENTROPY_BYTES, API_KEY_LENGTH
+
+
+def generate_api_key() -> str:
+    """Generate a high-entropy API key that is shown to the client only once."""
+
+    api_key = secrets.token_urlsafe(API_KEY_ENTROPY_BYTES)
+    if len(api_key) != API_KEY_LENGTH:
+        raise RuntimeError("Generated API key has an unexpected length")
+    return api_key
 
 
 def hash_api_key(api_key: str) -> str:

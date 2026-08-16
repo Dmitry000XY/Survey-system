@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 
+from src.api.openapi import COMMON_ERROR_RESPONSES
+
 from .debug.users import users_router
 from .debug.clients import clients_router
 from .debug.users_clients import users_clients_router
@@ -9,7 +11,11 @@ from .debug.questionnaires import questionnaires_router
 from .debug.questions import questions_router
 from .debug.settings import settings_router
 
-debug_router = APIRouter(tags=["Debug"], prefix="/api/debug")
+debug_router = APIRouter(
+    tags=["Debug"],
+    prefix="/api/debug",
+    responses=COMMON_ERROR_RESPONSES,
+)
 
 debug_router.include_router(users_router)
 debug_router.include_router(clients_router)
@@ -20,12 +26,8 @@ debug_router.include_router(questionnaires_router)
 debug_router.include_router(questions_router)
 debug_router.include_router(settings_router)
 
-# Если появится аутентификация, можно раскомментировать:
-# from src.auth.auth import auth_router
-# debug_router.include_router(auth_router)
-
 openapi_tags = [
-    {"name": "Debug", "description": "Debugging routes"},
+    {"name": "Debug", "description": "Development-only CRUD routes; disabled by default"},
     {"name": "Users", "description": "Operations with users"},
     {"name": "Clients", "description": "Operations with clients"},
     {"name": "Users clients", "description": "User-client relationship operations"},

@@ -1,11 +1,11 @@
 from sqlalchemy import column
 from sqlalchemy.dialects import mysql
 
-from src.repositories.wp_forms import _OrderedGroupConcat
+from src.repositories.wp_forms import OrderedGroupConcat
 
 
 def test_group_concat_has_a_stable_secondary_order() -> None:
-    expression = _OrderedGroupConcat(
+    expression = OrderedGroupConcat(
         column("field_hash"),
         column("field_order"),
         column("field_id"),
