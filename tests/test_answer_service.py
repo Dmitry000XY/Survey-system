@@ -34,6 +34,18 @@ class _QuestionnaireAnswerRepositoryStub(QuestionnaireAnswerRepository):
         return QuestionnaireAnswer(questionnaire_id=1, questionnaire_version=3)
 
 
+class _MissingQuestionRepositoryStub(_QuestionRepositoryStub):
+    async def get_question(self, question_id: int) -> None:
+        del question_id
+        return None
+
+
+class _MissingQuestionnaireAnswerRepositoryStub(_QuestionnaireAnswerRepositoryStub):
+    async def get_questionnaire_answer(self, qa_id: int) -> None:
+        del qa_id
+        return None
+
+
 def test_answer_must_belong_to_attempt_questionnaire_version() -> None:
     service = AnswerService(
         _AnswerRepositoryStub(),
@@ -55,3 +67,43 @@ def test_answer_must_belong_to_attempt_questionnaire_version() -> None:
             }
         ]
     }
+
+
+@pytest.mark.parametrize(
+    ("question_repository", "questionnaire_answer_repository", "expected_codes"),
+    [
+        (
+            _MissingQuestionRepositoryStub(),
+            _QuestionnaireAnswerRepositoryStub(),
+            ["question_not_found"],
+        ),
+        (
+            _QuestionRepositoryStub(),
+            _MissingQuestionnaireAnswerRepositoryStub(),
+            ["questionnaire_answer_not_found"],
+        ),
+        (
+            _MissingQuestionRepositoryStub(),
+            _MissingQuestionnaireAnswerRepositoryStub(),
+            ["question_not_found", "questionnaire_answer_not_found"],
+        ),
+    ],
+)
+def test_missing_answer_references_are_reported_as_violations(
+    question_repository: QuestionRepository,
+    questionnaire_answer_repository: QuestionnaireAnswerRepository,
+    expected_codes: list[str],
+) -> None:
+    service = AnswerService(
+        _AnswerRepositoryStub(),
+        question_repository,
+        questionnaire_answer_repository,
+    )
+    answer = AnswerCreate(question_id=10, questionnaire_answer_id=20, answer="yes")
+
+    with pytest.raises(DomainValidationError) as exception_info:
+        asyncio.run(service.create_answer(answer))
+
+    assert exception_info.value.details is not None
+    violations = exception_info.value.details["violations"]
+    assert [violation["code"] for violation in violations] == expected_codes

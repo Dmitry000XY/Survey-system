@@ -102,6 +102,23 @@ def test_ensure_settings_has_no_request_body_and_reports_creation_status() -> No
         assert response.json() == {"last_synchronization_time": "1970-01-01T00:00:00Z"}
 
 
+def test_delete_operations_document_empty_204_responses() -> None:
+    schema = _create_debug_application().openapi()
+    delete_paths = [
+        "/api/debug/users/{user_id}",
+        "/api/debug/clients/{client_id}",
+        "/api/debug/users-clients/{user_id}/{client_id}",
+        "/api/debug/answers/{question_id}/{questionnaire_answer_id}",
+        "/api/debug/questions/{question_id}",
+        "/api/debug/questionnaires/{questionnaire_id}/{questionnaire_version}",
+        "/api/debug/questionnaire-answers/{questionnaire_answer_id}",
+    ]
+
+    for path in delete_paths:
+        response = schema["paths"][path]["delete"]["responses"]["204"]
+        assert "content" not in response
+
+
 def test_openapi_documents_unified_error_responses() -> None:
     schema = _create_debug_application().openapi()
     response = schema["paths"]["/api/debug/users/{user_id}"]["get"]["responses"]["404"]

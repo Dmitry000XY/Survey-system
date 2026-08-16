@@ -2,6 +2,7 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+import pytest
 
 from src.application import lifespan as lifespan_module
 
@@ -56,6 +57,41 @@ def test_lifespan_initializes_settings_and_releases_resources_in_reverse_order(m
         "session_exit",
         "application_running",
         "stop_synchronization",
+        "close_wp_database",
+        "close_database",
+    ]
+
+
+def test_lifespan_releases_initialized_resources_when_startup_fails(monkeypatch) -> None:
+    events: list[str] = []
+
+    async def ensure_settings() -> None:
+        events.append("ensure_settings")
+        raise RuntimeError("settings initialization failed")
+
+    async def close_database() -> None:
+        events.append("close_database")
+
+    async def close_wp_database() -> None:
+        events.append("close_wp_database")
+
+    monkeypatch.setattr(lifespan_module, "global_init", lambda: events.append("global_init"))
+    monkeypatch.setattr(lifespan_module, "wp_global_init", lambda: events.append("wp_global_init"))
+    monkeypatch.setattr(lifespan_module, "_ensure_settings", ensure_settings)
+    monkeypatch.setattr(lifespan_module, "close_wp_database", close_wp_database)
+    monkeypatch.setattr(lifespan_module, "close_database", close_database)
+
+    async def run_lifespan() -> None:
+        async with lifespan_module.lifespan(FastAPI()):
+            pytest.fail("The application must not start after settings initialization fails")
+
+    with pytest.raises(RuntimeError, match="settings initialization failed"):
+        asyncio.run(run_lifespan())
+
+    assert events == [
+        "global_init",
+        "wp_global_init",
+        "ensure_settings",
         "close_wp_database",
         "close_database",
     ]
