@@ -36,4 +36,4 @@ class ClientOut(ClientBase):
 
 # Schema for outgoing data when creating client: includes the generated API key.
 class ClientOutWithAPI(ClientOut):
-    api_key: str
+    api_key: str = Field(repr=False)

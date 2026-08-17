@@ -16,6 +16,7 @@ class Questionnaire(BaseModel):
     __tablename__ = "questionnaires"
     __table_args__ = (
         CheckConstraint("questionnaire_version > 0", name="ck_questionnaires_version_positive"),
+        CheckConstraint("wordpress_id > 0", name="ck_questionnaires_wordpress_id_positive"),
         CheckConstraint(
             f"char_length(questionnaire_hash) = {QUESTIONNAIRE_HASH_LENGTH}",
             name="ck_questionnaires_hash_length",

@@ -1,23 +1,30 @@
 import asyncio
 from datetime import UTC, datetime
-from types import SimpleNamespace
-from typing import cast
 
+from src.models.clients import Client
 from src.repositories.clients import ClientRepository
 from src.schemas.clients import ClientCreate, ClientInDB
 from src.security import verify_api_key
 from src.services.clients import ClientService
 
 
-class _ClientRepositoryStub:
+class _ClientRepositoryStub(ClientRepository):
     stored_client: ClientInDB | None = None
 
-    async def get_client_by_name(self, client_name: str):
+    def __init__(self) -> None:
+        pass
+
+    async def get_client_by_name(self, client_name: str) -> Client | None:
+        del client_name
         return None
 
-    async def create_client(self, client: ClientInDB):
+    async def get_client_by_api_key_hash(self, api_key_hash: str) -> Client | None:
+        del api_key_hash
+        return None
+
+    async def create_client(self, client: ClientInDB) -> Client:
         self.stored_client = client
-        return SimpleNamespace(
+        return Client(
             client_id=1,
             client_name=client.client_name,
             time_created=datetime.now(UTC),
@@ -26,7 +33,7 @@ class _ClientRepositoryStub:
 
 def test_client_service_returns_api_key_once_and_stores_only_hash() -> None:
     repository = _ClientRepositoryStub()
-    service = ClientService(cast(ClientRepository, repository))
+    service = ClientService(repository)
 
     result = asyncio.run(service.create_client(ClientCreate(client_name="telegram")))
 

@@ -1,40 +1,38 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, Response, status
+
+from src.api.openapi import NOT_FOUND_RESPONSE
 from src.dependencies import get_setting_service
-from src.schemas.settings import SettingUpdate, SettingOut
+from src.schemas.settings import SettingOut, SettingUpdate
 from src.services.settings import SettingService
 
 settings_router = APIRouter(tags=["Settings"], prefix="/settings")
-setting_service = Annotated[SettingService, Depends(get_setting_service)]
+SettingServiceDependency = Annotated[SettingService, Depends(get_setting_service)]
 
 
-@settings_router.get("/", response_model=SettingOut)
-async def get_setting(service: setting_service):
-    setting = await service.get_setting()
-    if setting:
-        return setting
-    return Response(status_code=status.HTTP_404_NOT_FOUND)
+@settings_router.get("", response_model=SettingOut, status_code=status.HTTP_200_OK, responses=NOT_FOUND_RESPONSE)
+async def get_setting(service: SettingServiceDependency) -> SettingOut:
+    return await service.get_setting()
 
 
-@settings_router.put("/", response_model=SettingOut)
-async def update_setting(new_data: Annotated[SettingUpdate, Depends()], service: setting_service):
-    updated = await service.update_setting(new_data)
-    if updated:
-        return updated
-    return Response(status_code=status.HTTP_404_NOT_FOUND)
+@settings_router.patch("", response_model=SettingOut, status_code=status.HTTP_200_OK, responses=NOT_FOUND_RESPONSE)
+async def update_setting(new_data: SettingUpdate, service: SettingServiceDependency) -> SettingOut:
+    return await service.update_setting(new_data)
 
 
-@settings_router.post("/", response_model=SettingOut)
-async def create_setting(new_data: Annotated[SettingUpdate, Depends()], service: setting_service):
-    return await service.create_setting(new_data)
-
-
-@settings_router.post("/init", response_model=SettingOut)
-async def init_setting(new_data: Annotated[SettingUpdate, Depends()], service: setting_service, response: Response):
-    # Вся логика инициализации перенесена в сервис: функция init_settings должна вернуть (result, created)
-    result, created = await service.init_settings(new_data)
-    if created:
-        response.status_code = status.HTTP_201_CREATED
-    else:
-        response.status_code = status.HTTP_200_OK
-    return result
+@settings_router.put(
+    "",
+    response_model=SettingOut,
+    status_code=status.HTTP_200_OK,
+    responses={
+        201: {
+            "model": SettingOut,
+            "description": "Settings were created",
+        }
+    },
+)
+async def ensure_settings(service: SettingServiceDependency, response: Response) -> SettingOut:
+    setting, created = await service.ensure_settings()
+    response.status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    return setting

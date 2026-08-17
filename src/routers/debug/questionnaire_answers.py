@@ -1,55 +1,94 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, Response, status
+
+from fastapi import APIRouter, Depends, Path, Response, status
+
+from src.api.openapi import CONFLICT_RESPONSE, NOT_FOUND_OR_CONFLICT_RESPONSES, NOT_FOUND_RESPONSE
 from src.dependencies import get_questionnaire_answer_service
 from src.schemas.questionnaire_answers import (
     QuestionnaireAnswerCreate,
-    QuestionnaireAnswerOut,
     QuestionnaireAnswerDetail,
+    QuestionnaireAnswerOut,
+    QuestionnaireAnswerUpdate,
 )
 from src.services.questionnaire_answers import QuestionnaireAnswerService
 
 questionnaire_answers_router = APIRouter(tags=["Questionnaire answers"], prefix="/questionnaire-answers")
-qa_service = Annotated[QuestionnaireAnswerService, Depends(get_questionnaire_answer_service)]
+QuestionnaireAnswerServiceDependency = Annotated[
+    QuestionnaireAnswerService,
+    Depends(get_questionnaire_answer_service),
+]
+QuestionnaireAnswerId = Annotated[int, Path(gt=0)]
 
 
-@questionnaire_answers_router.post("/", response_model=QuestionnaireAnswerOut, status_code=status.HTTP_201_CREATED)
-async def create_questionnaire_answer(qa: Annotated[QuestionnaireAnswerCreate, Depends()], service: qa_service):
-    return await service.create_questionnaire_answer(qa)
+@questionnaire_answers_router.post(
+    "",
+    response_model=QuestionnaireAnswerOut,
+    status_code=status.HTTP_201_CREATED,
+    responses=CONFLICT_RESPONSE,
+)
+async def create_questionnaire_answer(
+    questionnaire_answer: QuestionnaireAnswerCreate,
+    service: QuestionnaireAnswerServiceDependency,
+) -> QuestionnaireAnswerOut:
+    return await service.create_questionnaire_answer(questionnaire_answer)
 
 
-@questionnaire_answers_router.get("/", response_model=list[QuestionnaireAnswerOut])
-async def get_all_questionnaire_answers(service: qa_service):
+@questionnaire_answers_router.get("", response_model=list[QuestionnaireAnswerOut], status_code=status.HTTP_200_OK)
+async def get_all_questionnaire_answers(
+    service: QuestionnaireAnswerServiceDependency,
+) -> list[QuestionnaireAnswerOut]:
     return await service.get_all_questionnaire_answers()
 
 
-@questionnaire_answers_router.get("/{qa_id}", response_model=QuestionnaireAnswerOut)
-async def get_questionnaire_answer(qa_id: int, service: qa_service):
-    qa = await service.get_questionnaire_answer(qa_id)
-    if qa:
-        return qa
-    return Response(status_code=status.HTTP_404_NOT_FOUND)
+@questionnaire_answers_router.get(
+    "/{questionnaire_answer_id}",
+    response_model=QuestionnaireAnswerOut,
+    status_code=status.HTTP_200_OK,
+    responses=NOT_FOUND_RESPONSE,
+)
+async def get_questionnaire_answer(
+    questionnaire_answer_id: QuestionnaireAnswerId,
+    service: QuestionnaireAnswerServiceDependency,
+) -> QuestionnaireAnswerOut:
+    return await service.get_questionnaire_answer(questionnaire_answer_id)
 
 
-# Эндпоинт для детальной анкеты с вложенными ответами
-@questionnaire_answers_router.get("/detail/{qa_id}", response_model=QuestionnaireAnswerDetail)
-async def get_questionnaire_answer_detail(qa_id: int, service: qa_service):
-    qa = await service.get_questionnaire_answer(qa_id)
-    if qa:
-        return await service.get_questionnaire_answer_detail(qa_id)
-    return Response(status_code=status.HTTP_404_NOT_FOUND)
+@questionnaire_answers_router.get(
+    "/{questionnaire_answer_id}/detail",
+    response_model=QuestionnaireAnswerDetail,
+    status_code=status.HTTP_200_OK,
+    responses=NOT_FOUND_RESPONSE,
+)
+async def get_questionnaire_answer_detail(
+    questionnaire_answer_id: QuestionnaireAnswerId,
+    service: QuestionnaireAnswerServiceDependency,
+) -> QuestionnaireAnswerDetail:
+    return await service.get_questionnaire_answer_detail(questionnaire_answer_id)
 
 
-@questionnaire_answers_router.put("/{qa_id}", response_model=QuestionnaireAnswerOut)
+@questionnaire_answers_router.patch(
+    "/{questionnaire_answer_id}",
+    response_model=QuestionnaireAnswerOut,
+    status_code=status.HTTP_200_OK,
+    responses=NOT_FOUND_OR_CONFLICT_RESPONSES,
+)
 async def update_questionnaire_answer(
-    qa_id: int, new_data: Annotated[QuestionnaireAnswerCreate, Depends()], service: qa_service
-):
-    updated = await service.update_questionnaire_answer(qa_id, new_data)
-    if updated:
-        return updated
-    return Response(status_code=status.HTTP_404_NOT_FOUND)
+    questionnaire_answer_id: QuestionnaireAnswerId,
+    new_data: QuestionnaireAnswerUpdate,
+    service: QuestionnaireAnswerServiceDependency,
+) -> QuestionnaireAnswerOut:
+    return await service.update_questionnaire_answer(questionnaire_answer_id, new_data)
 
 
-@questionnaire_answers_router.delete("/{qa_id}")
-async def delete_questionnaire_answer(qa_id: int, service: qa_service):
-    await service.delete_questionnaire_answer(qa_id)
+@questionnaire_answers_router.delete(
+    "/{questionnaire_answer_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    responses=NOT_FOUND_RESPONSE,
+)
+async def delete_questionnaire_answer(
+    questionnaire_answer_id: QuestionnaireAnswerId,
+    service: QuestionnaireAnswerServiceDependency,
+) -> Response:
+    await service.delete_questionnaire_answer(questionnaire_answer_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

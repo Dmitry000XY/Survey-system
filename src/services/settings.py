@@ -1,34 +1,23 @@
-from fastapi import Response, status
 from src.repositories.settings import SettingRepository
+from src.schemas.settings import SettingOut, SettingUpdate
+
+from .base import BaseService
 
 
-class SettingService:
-    def __init__(self, setting_repository: SettingRepository):
+class SettingService(BaseService):
+    resource_name = "settings"
+
+    def __init__(self, setting_repository: SettingRepository) -> None:
         self.setting_repository = setting_repository
 
-    async def get_setting(self):
-        setting = await self.setting_repository.get_setting()
-        if not setting:
-            return Response(status_code=status.HTTP_404_NOT_FOUND)
-        return setting
+    async def get_setting(self) -> SettingOut:
+        setting = await self._run(self.setting_repository.get_setting())
+        return self._to_schema(self._require(setting, details={}), SettingOut)
 
-    async def update_setting(self, new_data):
-        if await self.setting_repository.get_setting():
-            return await self.setting_repository.update_setting(new_data)
-        return Response(status_code=status.HTTP_404_NOT_FOUND)
+    async def update_setting(self, new_data: SettingUpdate) -> SettingOut:
+        updated = await self._run(self.setting_repository.update_setting(new_data))
+        return self._to_schema(self._require(updated, details={}), SettingOut)
 
-    async def create_setting(self, setting):
-        # Если в таблице уже есть запись, возвращаем ошибку
-        if await self.setting_repository.get_setting():
-            return Response(
-                status_code=status.HTTP_409_CONFLICT,
-                content="Settings already exist. Only one settings row is allowed."
-            )
-        return await self.setting_repository.create_setting(setting)
-
-    async def init_settings(self, new_data):
-        existing = await self.setting_repository.get_setting()
-        if existing:
-            return existing, False
-        created = await self.setting_repository.create_setting(new_data)
-        return created, True
+    async def ensure_settings(self) -> tuple[SettingOut, bool]:
+        setting, created = await self._run(self.setting_repository.ensure_settings())
+        return self._to_schema(setting, SettingOut), created

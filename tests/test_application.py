@@ -1,4 +1,6 @@
 from importlib import import_module
+from pathlib import Path
+import tomllib
 
 
 def test_application_can_be_imported(monkeypatch):
@@ -21,4 +23,6 @@ def test_application_can_be_imported(monkeypatch):
     main = import_module("src.main")
 
     assert main.app.title == "Survey system"
-    assert main.app.version == "0.0.1"
+    project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]
+    assert main.app.version == project["version"]
+    assert not any(route.path.startswith("/api/debug") for route in main.app.routes)

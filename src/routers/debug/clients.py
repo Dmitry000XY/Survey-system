@@ -1,70 +1,61 @@
-import json
 from typing import Annotated
-from fastapi import APIRouter, Depends, Response, HTTPException, status
+
+from fastapi import APIRouter, Depends, Path, Response, status
+
+from src.api.openapi import CONFLICT_RESPONSE, NOT_FOUND_OR_CONFLICT_RESPONSES, NOT_FOUND_RESPONSE
 from src.dependencies import get_client_service
-from src.schemas.clients import ClientCreate, ClientOut, ClientUpdate, ClientOutWithAPI
+from src.schemas.clients import ClientCreate, ClientOut, ClientOutWithAPI, ClientUpdate
 from src.services.clients import ClientService
 
 clients_router = APIRouter(tags=["Clients"], prefix="/clients")
-client_service = Annotated[ClientService, Depends(get_client_service)]
+ClientServiceDependency = Annotated[ClientService, Depends(get_client_service)]
+ClientId = Annotated[int, Path(gt=0)]
 
 
 @clients_router.post(
-    "/",
-    response_model=ClientOutWithAPI,
-    status_code=status.HTTP_201_CREATED,
-    responses={
-        201: {"description": "Client successfully created."},
-        409: {"description": "Client already exists."},
-    },
+    "", response_model=ClientOutWithAPI, status_code=status.HTTP_201_CREATED, responses=CONFLICT_RESPONSE
 )
-async def create_client(client: Annotated[ClientCreate, Depends()], service: client_service):
+async def create_client(
+    client: ClientCreate,
+    service: ClientServiceDependency,
+    response: Response,
+) -> ClientOutWithAPI:
+    response.headers["Cache-Control"] = "no-store"
     return await service.create_client(client)
 
 
-@clients_router.get(
-    "/",
-    response_model=list[ClientOut],
-    status_code=status.HTTP_200_OK,
-    responses={200: {"description": "List of clients returned."}},
-)
-async def get_all_clients(service: client_service):
+@clients_router.get("", response_model=list[ClientOut], status_code=status.HTTP_200_OK)
+async def get_all_clients(service: ClientServiceDependency) -> list[ClientOut]:
     return await service.get_all_clients()
 
 
 @clients_router.get(
+    "/{client_id}", response_model=ClientOut, status_code=status.HTTP_200_OK, responses=NOT_FOUND_RESPONSE
+)
+async def get_client(client_id: ClientId, service: ClientServiceDependency) -> ClientOut:
+    return await service.get_client(client_id)
+
+
+@clients_router.patch(
     "/{client_id}",
     response_model=ClientOut,
     status_code=status.HTTP_200_OK,
-    responses={200: {"description": "Client returned."}, 404: {"description": "Client not found."}},
+    responses=NOT_FOUND_OR_CONFLICT_RESPONSES,
 )
-async def get_client(client_id: int, service: client_service):
-    client = await service.get_client(client_id)
-    if client:
-        return client
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
-
-
-@clients_router.put(
-    "/{client_id}",
-    response_model=ClientOut,
-    status_code=status.HTTP_200_OK,
-    responses={200: {"description": "Client successfully updated."}, 404: {"description": "Client not found."}},
-)
-async def update_client(client_id: int, new_data: Annotated[ClientUpdate, Depends()], service: client_service):
-    updated = await service.update_client(client_id, new_data)
-    if updated:
-        return updated
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+async def update_client(
+    client_id: ClientId,
+    new_data: ClientUpdate,
+    service: ClientServiceDependency,
+) -> ClientOut:
+    return await service.update_client(client_id, new_data)
 
 
 @clients_router.delete(
     "/{client_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    responses={204: {"description": "Client successfully deleted."}, 404: {"description": "Client not found."}},
+    response_class=Response,
+    responses=NOT_FOUND_RESPONSE,
 )
-async def delete_client(client_id: int, service: client_service):
+async def delete_client(client_id: ClientId, service: ClientServiceDependency) -> Response:
     await service.delete_client(client_id)
-    return Response(
-        status_code=status.HTTP_204_NO_CONTENT, content=json.dumps({"message": "Client successfully deleted."})
-    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -56,6 +56,18 @@ def test_internal_generated_identifiers_use_integer() -> None:
     assert type(questionnaire_answers.c.questionnaire_answer_id.type) is Integer
 
 
+def test_wordpress_identifiers_are_positive() -> None:
+    expected_constraints = {
+        "users": "ck_users_id_positive",
+        "questionnaires": "ck_questionnaires_wordpress_id_positive",
+        "questions": "ck_questions_wordpress_id_positive",
+    }
+
+    for table_name, constraint_name in expected_constraints.items():
+        constraints = BaseModel.metadata.tables[table_name].constraints
+        assert any(constraint.name == constraint_name for constraint in constraints)
+
+
 def test_structured_values_use_jsonb() -> None:
     questions = BaseModel.metadata.tables["questions"]
     answers = BaseModel.metadata.tables["answers"]

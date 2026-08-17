@@ -59,7 +59,11 @@ def get_questionnaire_answer_service(session: DBSession) -> QuestionnaireAnswerS
 
 
 def get_answer_service(session: DBSession) -> AnswerService:
-    return AnswerService(AnswerRepository(session))
+    return AnswerService(
+        AnswerRepository(session),
+        QuestionRepository(session),
+        QuestionnaireAnswerRepository(session),
+    )
 
 
 def get_questionnaire_service(session: DBSession) -> QuestionnaireService:

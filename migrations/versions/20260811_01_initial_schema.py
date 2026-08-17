@@ -61,6 +61,7 @@ def upgrade() -> None:
         sa.Column("time_updated", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("time_created", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.CheckConstraint("char_length(login) >= 3", name="ck_users_login_min_length"),
+        sa.CheckConstraint("user_id > 0", name="ck_users_id_positive"),
         sa.PrimaryKeyConstraint("user_id"),
         sa.UniqueConstraint("login"),
     )
@@ -93,6 +94,7 @@ def upgrade() -> None:
         sa.Column("time_created", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.CheckConstraint("char_length(questionnaire_hash) = 64", name="ck_questionnaires_hash_length"),
         sa.CheckConstraint("questionnaire_version > 0", name="ck_questionnaires_version_positive"),
+        sa.CheckConstraint("wordpress_id > 0", name="ck_questionnaires_wordpress_id_positive"),
         sa.PrimaryKeyConstraint("questionnaire_id", "questionnaire_version"),
         sa.UniqueConstraint("questionnaire_id", "questionnaire_hash", name="uq_questionnaires_id_hash"),
         sa.UniqueConstraint(
@@ -171,6 +173,7 @@ def upgrade() -> None:
             name="ck_questions_dependencies_show_hide",
         ),
         sa.CheckConstraint("question_order >= 0", name="ck_questions_order_nonnegative"),
+        sa.CheckConstraint("wordpress_id > 0", name="ck_questions_wordpress_id_positive"),
         sa.ForeignKeyConstraint(
             ["questionnaire_id", "questionnaire_version"],
             ["questionnaires.questionnaire_id", "questionnaires.questionnaire_version"],

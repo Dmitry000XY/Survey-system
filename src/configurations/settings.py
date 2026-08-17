@@ -12,6 +12,7 @@ class Settings(ProjectSettings):
     DB_USER: str
     DB_PASS: SecretStr
     DB_NAME: str
+    ENABLE_DEBUG_API: bool = False
 
     @property
     def database_url_asyncpg(self) -> URL:
@@ -34,4 +35,5 @@ class Settings(ProjectSettings):
 
 @cache
 def get_settings() -> Settings:
+    # noinspection PyArgumentList
     return Settings()

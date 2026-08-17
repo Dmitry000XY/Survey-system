@@ -13,7 +13,10 @@ if TYPE_CHECKING:
 
 class User(BaseModel):
     __tablename__ = "users"
-    __table_args__ = (CheckConstraint("char_length(login) >= 3", name="ck_users_login_min_length"),)
+    __table_args__ = (
+        CheckConstraint("user_id > 0", name="ck_users_id_positive"),
+        CheckConstraint("char_length(login) >= 3", name="ck_users_login_min_length"),
+    )
 
     # The primary key is the corresponding WordPress user ID.
     user_id: Mapped[bigintpk]
@@ -22,7 +25,7 @@ class User(BaseModel):
     time_updated: Mapped[timestamp_onupdate]
     time_created: Mapped[timestamp]
 
-    # Связи
+    # Relationships
     user_clients: Mapped[list["UserClient"]] = relationship(
         "UserClient",
         back_populates="user",

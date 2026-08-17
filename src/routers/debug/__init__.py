@@ -8,7 +8,12 @@ from .questions import questions_router
 from .settings import settings_router
 
 __all__ = [
-    "users_router", "clients_router", "users_clients_router",
-    "questionnaire_answers_router", "answers_router", "questionnaires_router",
-    "questions_router", "settings_router"
+    "users_router",
+    "clients_router",
+    "users_clients_router",
+    "questionnaire_answers_router",
+    "answers_router",
+    "questionnaires_router",
+    "questions_router",
+    "settings_router",
 ]
