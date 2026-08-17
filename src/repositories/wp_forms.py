@@ -35,20 +35,19 @@ class WPFormRepository:
         return await self.session.get(WPForm, form_id)
 
     async def get_all_forms_with_hash(self) -> list[tuple[WPForm, str]]:
-        """
-        Возвращает список кортежей (WPForm, questionnaire_hash), где questionnaire_hash вычисляется как
-        SHA2(JSON_ARRAY(<form data>, GROUP_CONCAT(SHA2(JSON_ARRAY(<field data>), 256))), 256).
-        При этом сначала для сессии устанавливается большой лимит group_concat_max_len,
-        а все NULL приводятся к '' через COALESCE.
-        Также, форма загружается со всеми связанными WPField через relationship.
+        """Load eligible forms with deterministic SHA-256 fingerprints.
+
+        Each fingerprint covers normalized form data and the ordered hashes of
+        eligible fields. NULL values become empty strings, and related fields
+        are loaded with the form in a separate select-in query.
         """
 
-        # Увеличиваем лимит только для этой сессии
+        # Increase the aggregation limit only for this database session.
         await self.session.execute(
             text("SET SESSION group_concat_max_len = :max_len").bindparams(max_len=1_000_000_000)
         )
 
-        # Поля из WPForm
+        # Normalized form attributes included in the fingerprint.
         form_id = func.coalesce(cast(WPForm.id, String), "")
         form_key = func.coalesce(WPForm.form_key, "")
         form_name = func.coalesce(WPForm.name, "")
@@ -62,7 +61,7 @@ class WPFormRepository:
         form_options = func.coalesce(WPForm.options, "")
         form_created = func.coalesce(cast(WPForm.created_at, String), "")
 
-        # Хеш каждой записи поля
+        # Fingerprint each eligible field independently.
         field_hash = func.sha2(
             func.json_array(
                 func.coalesce(cast(WPField.id, String), ""),
@@ -89,7 +88,7 @@ class WPFormRepository:
             WPField.id,
         )
 
-        # Общий questionnaire_hash
+        # Combine normalized form data and ordered field hashes.
         questionnaire_hash = func.sha2(
             func.json_array(
                 form_id,
@@ -109,10 +108,10 @@ class WPFormRepository:
             256,
         ).label("questionnaire_hash")
 
-        # Условие соединения: только разрешённые типы полей
+        # Only supported field types participate in the questionnaire.
         join_cond = and_(WPField.form_id == WPForm.id, WPField.type.in_(ALLOWED_QUESTION_TYPES))
 
-        # Оставляем только те анкеты, у которых есть хотя бы один тег
+        # Only forms tagged for at least one survey workflow are eligible.
         tag_filters = [WPForm.form_key.ilike(f"%{tag}%") for tag in ALL_SEARCH_TAGS]
 
         query = (

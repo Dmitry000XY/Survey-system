@@ -25,7 +25,7 @@ class User(BaseModel):
     time_updated: Mapped[timestamp_onupdate]
     time_created: Mapped[timestamp]
 
-    # Связи
+    # Relationships
     user_clients: Mapped[list["UserClient"]] = relationship(
         "UserClient",
         back_populates="user",
