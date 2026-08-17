@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from unittest.mock import patch
@@ -202,7 +203,7 @@ class EndpointCase:
     method: str
     path: str
     status_code: int
-    payload: dict[str, object] | None = None
+    payload: Mapping[str, object] | None = None
 
 
 USER_PAYLOAD = {"user_id": 1, "login": "dmitry", "password_hash": PASSWORD_HASH}
